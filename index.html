@@ -357,7 +357,7 @@ function getSB() { if (!sbClient2) sbClient2 = window.supabase.createClient(SUPA
 async function loginGoogle() {
   const { error } = await getSB().auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo: window.location.origin + window.location.pathname, queryParams: { access_type: 'offline', prompt: 'consent' } }
   });
   if (error) { document.getElementById('login-error').textContent='Error al conectar con Google'; document.getElementById('login-error').style.display='block'; }
 }
