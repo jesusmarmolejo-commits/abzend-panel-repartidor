@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -7,7 +7,6 @@ const STATUS_LABEL = { pending:'Pendiente', assigned:'Asignado', picked_up:'Reco
 const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#E1F5EE', picked_up:'#E1F5EE', in_transit:'#E6F1FB', delivered:'#EAF3DE' }
 const STATUS_TEXT = { pending:'#854F0B', assigned:'#0F6E56', picked_up:'#0F6E56', in_transit:'#185FA5', delivered:'#3B6D11' }
 
-// Transiciones permitidas para el repartidor
 const ALLOWED_TRANSITIONS = {
   assigned:   [{ value:'picked_up',  label:'Confirmar recolección', code:'PUP' },
                { value:'in_transit', label:'En tránsito',           code:'INT' }],
@@ -15,6 +14,16 @@ const ALLOWED_TRANSITIONS = {
                { value:'delivered',  label:'Entregado',             code:'DLV' }],
   in_transit: [{ value:'delivered',  label:'Entregado',             code:'DLV' }],
 }
+
+const RECEIVER_TYPES = [
+  { value:'titular',    label:'Titular' },
+  { value:'amigo',      label:'Amigo' },
+  { value:'familiar',   label:'Familiar' },
+  { value:'conocido',   label:'Conocido' },
+  { value:'guardia',    label:'Guardia' },
+  { value:'recepcion',  label:'Recepción' },
+  { value:'otro',       label:'Otro' },
+]
 
 const fmtDate = (d) => d ? new Date(d).toLocaleString('es-MX', { dateStyle:'short', timeStyle:'short' }) : ''
 
@@ -28,6 +37,19 @@ export default function DriverPanel() {
   const [processing, setProcessing] = useState(false)
   const [msg, setMsg] = useState('')
   const [qrInput, setQrInput] = useState('')
+
+  // POD state
+  const [showPOD, setShowPOD] = useState(false)
+  const [podOrder, setPodOrder] = useState(null)
+  const [receiverName, setReceiverName] = useState('')
+  const [receiverType, setReceiverType] = useState('titular')
+  const [photos, setPhotos] = useState([null, null, null, null])
+  const [photoPreviews, setPhotoPreviews] = useState([null, null, null, null])
+  const [signature, setSignature] = useState(null)
+  const [signaturePreview, setSignaturePreview] = useState(null)
+  const [podProcessing, setPodProcessing] = useState(false)
+  const canvasRef = useRef(null)
+  const isDrawing = useRef(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -36,18 +58,11 @@ export default function DriverPanel() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/login'); return }
       setUser(session.user)
-
-      // Obtener perfil del repartidor
       const { data: userData } = await supabase
         .from('users').select('id, role').eq('auth_id', session.user.id).single()
-
-      if (!userData || userData.role !== 'driver') {
-        router.push('/dashboard'); return
-      }
-
+      if (!userData || userData.role !== 'driver') { router.push('/dashboard'); return }
       const { data: driverData } = await supabase
         .from('drivers').select('id').eq('user_id', userData.id).single()
-
       if (!driverData) { router.push('/dashboard'); return }
       setDriverId(driverData.id)
       await loadOrders(supabase, driverData.id)
@@ -57,14 +72,12 @@ export default function DriverPanel() {
   }, [])
 
   const loadOrders = async (supabase, dId) => {
-    // SOLO órdenes asignadas al repartidor (no mostrar pendientes)
     const { data: assigned } = await supabase
       .from('orders')
       .select('*, client:client_id(full_name, phone)')
       .eq('driver_id', dId)
       .in('status', ['assigned','picked_up','in_transit'])
       .order('created_at', { ascending: false })
-
     setOrders(assigned || [])
   }
 
@@ -75,74 +88,236 @@ export default function DriverPanel() {
   }
 
   const updateStatus = async () => {
-  if (!selectedTransition) return
-  setProcessing(true)
-  try {
-    const supabase = createClient()
-    const now = new Date().toISOString()
-    const transition = ALLOWED_TRANSITIONS[selectedOrder.status]?.find(t => t.value === selectedTransition)
-    const extra = {}
-    if (selectedTransition === 'assigned') extra.driver_id = driverId
-    if (selectedTransition === 'delivered') extra.delivered_at = now
+    if (!selectedTransition) return
 
-    const { error } = await supabase.from('orders')
-      .update({ status: selectedTransition, status_updated_at: now, ...extra })
-      .eq('id', selectedOrder.id)
-    if (error) throw error
+    // Si es entregado, abrir modal POD primero
+    if (selectedTransition === 'delivered') {
+      setPodOrder(selectedOrder)
+      setSelectedOrder(null)
+      setShowPOD(true)
+      return
+    }
 
-    // Obtener ubicación del repartidor
-    let lat = null, lng = null
-    if (navigator.geolocation && selectedTransition === 'in_transit') {
+    setProcessing(true)
+    try {
+      const supabase = createClient()
+      const now = new Date().toISOString()
+      const transition = ALLOWED_TRANSITIONS[selectedOrder.status]?.find(t => t.value === selectedTransition)
+      const extra = {}
+      if (selectedTransition === 'assigned') extra.driver_id = driverId
+
+      const { error } = await supabase.from('orders')
+        .update({ status: selectedTransition, status_updated_at: now, ...extra })
+        .eq('id', selectedOrder.id)
+      if (error) throw error
+
+      let lat = null, lng = null
+      if (navigator.geolocation && selectedTransition === 'in_transit') {
+        try {
+          const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+          })
+          lat = pos.coords.latitude
+          lng = pos.coords.longitude
+          if (selectedOrder.dest_address) {
+            const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.dest_address)}`
+            window.open(mapsUrl, '_blank')
+          }
+        } catch(geoErr) {
+          console.warn('No se pudo obtener ubicación GPS:', geoErr)
+        }
+      }
+
+      await supabase.from('order_events').insert({
+        order_id: selectedOrder.id,
+        status: selectedTransition,
+        status_code: transition?.code || null,
+        note: `Actualizado por repartidor`,
+        lat, lng
+      })
+
+      setMsg(`Orden ${selectedOrder.tracking_code}: ${STATUS_LABEL[selectedTransition]}`)
+      setSelectedOrder(null)
+      await loadOrders(supabase, driverId)
+    } catch(e) {
+      setMsg('Error: ' + e.message)
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // ── POD ──────────────────────────────────────────────────────
+  const handlePhotoChange = (index, file) => {
+    if (!file) return
+    const newPhotos = [...photos]
+    newPhotos[index] = file
+    setPhotos(newPhotos)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const newPreviews = [...photoPreviews]
+      newPreviews[index] = e.target.result
+      setPhotoPreviews(newPreviews)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Canvas signature
+  const startDraw = (e) => {
+    isDrawing.current = true
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    const rect = canvas.getBoundingClientRect()
+    const x = (e.touches?.[0]?.clientX || e.clientX) - rect.left
+    const y = (e.touches?.[0]?.clientY || e.clientY) - rect.top
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+  }
+
+  const draw = (e) => {
+    if (!isDrawing.current) return
+    e.preventDefault()
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    const rect = canvas.getBoundingClientRect()
+    const x = (e.touches?.[0]?.clientX || e.clientX) - rect.left
+    const y = (e.touches?.[0]?.clientY || e.clientY) - rect.top
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = '#0F6E56'
+    ctx.lineTo(x, y)
+    ctx.stroke()
+  }
+
+  const stopDraw = () => {
+    isDrawing.current = false
+    const canvas = canvasRef.current
+    canvas.toBlob((blob) => {
+      setSignature(blob)
+      setSignaturePreview(canvas.toDataURL())
+    })
+  }
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    setSignature(null)
+    setSignaturePreview(null)
+  }
+
+  const submitPOD = async () => {
+    if (!receiverName.trim()) { setMsg('❌ Ingresa el nombre de quien recibe'); return }
+    if (!signature) { setMsg('❌ Se requiere firma del destinatario'); return }
+    const atLeastOnePhoto = photos.some(p => p !== null)
+    if (!atLeastOnePhoto) { setMsg('❌ Se requiere al menos 1 foto'); return }
+
+    setPodProcessing(true)
+    try {
+      const supabase = createClient()
+      const now = new Date().toISOString()
+      const orderId = podOrder.id
+
+      // Obtener GPS
+      let lat = null, lng = null
       try {
         const pos = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
         })
         lat = pos.coords.latitude
         lng = pos.coords.longitude
-      } catch(geoErr) {
-        console.warn('No se pudo obtener ubicación GPS:', geoErr)
+      } catch(e) {}
+
+      // Subir fotos
+      const photoUrls = [null, null, null, null]
+      for (let i = 0; i < 4; i++) {
+        if (photos[i]) {
+          const path = `${orderId}/photo_${i+1}_${Date.now()}`
+          const { data, error } = await supabase.storage
+            .from('pod-media')
+            .upload(path, photos[i], { contentType: photos[i].type || 'image/jpeg' })
+          if (!error) {
+            const { data: url } = supabase.storage.from('pod-media').getPublicUrl(path)
+            photoUrls[i] = url.publicUrl
+          }
+        }
       }
-      
-      // Abrir Google Maps (fuera del try-catch de GPS)
-      if (selectedOrder.dest_address) {
-        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.dest_address)}`
-        window.open(mapsUrl, '_blank')
+
+      // Subir firma
+      let signatureUrl = null
+      if (signature) {
+        const sigPath = `${orderId}/signature_${Date.now()}`
+        const { error } = await supabase.storage
+          .from('pod-media')
+          .upload(sigPath, signature, { contentType: 'image/png' })
+        if (!error) {
+          const { data: url } = supabase.storage.from('pod-media').getPublicUrl(sigPath)
+          signatureUrl = url.publicUrl
+        }
       }
+
+      // Insertar POD
+      const { error: podError } = await supabase.from('proof_of_delivery').insert({
+        order_id: orderId,
+        receiver_name: receiverName.trim(),
+        receiver_type: receiverType,
+        photo_1: photoUrls[0],
+        photo_2: photoUrls[1],
+        photo_3: photoUrls[2],
+        photo_4: photoUrls[3],
+        signature: signatureUrl,
+        lat, lng,
+        created_by: driverId
+      })
+      if (podError) throw podError
+
+      // Actualizar orden a entregada
+      await supabase.from('orders').update({
+        status: 'delivered',
+        status_updated_at: now,
+        delivered_at: now
+      }).eq('id', orderId)
+
+      // Evento
+      await supabase.from('order_events').insert({
+        order_id: orderId,
+        status: 'delivered',
+        status_code: 'DLV',
+        note: `Entregado a: ${receiverName} (${receiverType})`,
+        lat, lng
+      })
+
+      setMsg(`✅ Orden ${podOrder.tracking_code} entregada con POD`)
+      resetPOD()
+      await loadOrders(supabase, driverId)
+    } catch(e) {
+      setMsg('❌ Error: ' + e.message)
+    } finally {
+      setPodProcessing(false)
     }
-
-    await supabase.from('order_events').insert({
-      order_id: selectedOrder.id,
-      status: selectedTransition,
-      status_code: transition?.code || null,
-      note: `Actualizado por repartidor`,
-      lat,
-      lng
-    })
-
-    setMsg(`Orden ${selectedOrder.tracking_code}: ${STATUS_LABEL[selectedTransition]}`)
-    setSelectedOrder(null)
-    await loadOrders(supabase, driverId)
-  } catch(e) {
-    setMsg('Error: ' + e.message)
-  } finally {
-    setProcessing(false)
   }
-}
+
+  const resetPOD = () => {
+    setShowPOD(false)
+    setPodOrder(null)
+    setReceiverName('')
+    setReceiverType('titular')
+    setPhotos([null, null, null, null])
+    setPhotoPreviews([null, null, null, null])
+    setSignature(null)
+    setSignaturePreview(null)
+  }
+
   const scanQR = async () => {
     if (!qrInput.trim()) return
     setProcessing(true)
     try {
       const supabase = createClient()
       const input = qrInput.trim()
-      
-      // Intentar buscar por tracking_code primero
       let { data, error } = await supabase
         .from('orders')
         .select('*, client:client_id(full_name, phone)')
         .eq('tracking_code', input)
         .maybeSingle()
-      
-      // Si no se encuentra, intentar con qr_code
       if (!data) {
         const result = await supabase
           .from('orders')
@@ -152,45 +327,20 @@ export default function DriverPanel() {
         data = result.data
         error = result.error
       }
-      
-      if (error || !data) { 
-        setMsg('❌ Código no encontrado')
-        setProcessing(false)
-        return 
-      }
-
-      // Verificar que la orden esté pendiente
-      if (data.status !== 'pending') {
-        setMsg('⚠️ Esta orden ya fue asignada a otro repartidor')
-        setProcessing(false)
-        return
-      }
-
-      // AUTO-ASIGNAR la orden al repartidor
+      if (error || !data) { setMsg('❌ Código no encontrado'); setProcessing(false); return }
+      if (data.status !== 'pending') { setMsg('⚠️ Esta orden ya fue asignada a otro repartidor'); setProcessing(false); return }
       const now = new Date().toISOString()
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ 
-          driver_id: driverId, 
-          status: 'assigned',
-          status_updated_at: now
-        })
+        .update({ driver_id: driverId, status: 'assigned', status_updated_at: now })
         .eq('id', data.id)
-
       if (updateError) throw updateError
-
-      // Registrar evento
       await supabase.from('order_events').insert({
-        order_id: data.id,
-        status: 'assigned',
-        status_code: 'ASC',
+        order_id: data.id, status: 'assigned', status_code: 'ASC',
         note: 'Orden asignada por escaneo QR del repartidor'
       })
-
       setMsg(`✅ Orden #${data.tracking_code} asignada exitosamente`)
       setQrInput('')
-      
-      // Recargar órdenes para mostrar la nueva
       await loadOrders(supabase, driverId)
     } catch(e) {
       setMsg('❌ Error: ' + e.message)
@@ -230,19 +380,10 @@ export default function DriverPanel() {
         <div style={s.card}>
           <div style={s.cardTitle}>Escanear código QR de la orden</div>
           <div style={s.qrRow}>
-            <input
-              style={s.qrInput}
-              placeholder="Ingresa código de guía o escanea QR..."
-              value={qrInput}
-              onChange={e => setQrInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && scanQR()}
-              disabled={processing}
-            />
-            <button 
-              style={{...s.qrBtn, opacity: processing ? 0.6 : 1}} 
-              onClick={scanQR}
-              disabled={processing}
-            >
+            <input style={s.qrInput} placeholder="Ingresa código de guía o escanea QR..."
+              value={qrInput} onChange={e => setQrInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && scanQR()} disabled={processing} />
+            <button style={{...s.qrBtn, opacity: processing ? 0.6 : 1}} onClick={scanQR} disabled={processing}>
               {processing ? 'Procesando...' : 'Escanear'}
             </button>
           </div>
@@ -273,6 +414,11 @@ export default function DriverPanel() {
                       ))}
                     </select>
                   </div>
+                  {selectedTransition === 'delivered' && (
+                    <div style={{background:'#E1F5EE',borderRadius:8,padding:'10px 12px',marginBottom:'1rem',fontSize:13,color:'#0F6E56'}}>
+                      📸 Se solicitará Prueba de Entrega (POD)
+                    </div>
+                  )}
                   <div style={s.modalBtns}>
                     <button style={s.cancelBtn} onClick={() => setSelectedOrder(null)}>Cancelar</button>
                     <button style={{...s.confirmBtn, opacity: processing ? 0.6:1}} onClick={updateStatus} disabled={processing}>
@@ -282,10 +428,90 @@ export default function DriverPanel() {
                 </>
               ) : (
                 <div style={s.noTransitions}>
-                  <p>No hay acciones disponibles para este estado.</p>
+                  <p>No hay acciones disponibles.</p>
                   <button style={s.cancelBtn} onClick={() => setSelectedOrder(null)}>Cerrar</button>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal POD */}
+        {showPOD && podOrder && (
+          <div style={s.modalOverlay}>
+            <div style={{...s.modal, maxWidth:500, maxHeight:'90vh', overflowY:'auto'}}>
+              <h3 style={s.modalTitle}>📸 Prueba de Entrega</h3>
+              <p style={s.modalSub}>#{podOrder.tracking_code}</p>
+              <p style={{...s.modalSub, marginBottom:'1rem'}}>{podOrder.dest_address}</p>
+
+              {/* Quien recibe */}
+              <div style={s.field}>
+                <label style={s.label}>Nombre de quien recibe *</label>
+                <input style={s.input} placeholder="Nombre completo"
+                  value={receiverName} onChange={e => setReceiverName(e.target.value)} />
+              </div>
+
+              <div style={s.field}>
+                <label style={s.label}>Relación con el destinatario *</label>
+                <select style={s.input} value={receiverType} onChange={e => setReceiverType(e.target.value)}>
+                  {RECEIVER_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Fotos */}
+              <div style={s.field}>
+                <label style={s.label}>Fotos del paquete (mín. 1, máx. 4) *</label>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+                  {[0,1,2,3].map(i => (
+                    <div key={i}>
+                      <label style={{
+                        display:'block', border:'2px dashed #ddd', borderRadius:8,
+                        cursor:'pointer', overflow:'hidden', aspectRatio:'1',
+                        background: photoPreviews[i] ? 'transparent' : '#f9f9f9'
+                      }}>
+                        {photoPreviews[i] ? (
+                          <img src={photoPreviews[i]} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                        ) : (
+                          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#aaa',fontSize:12,gap:4,padding:'1rem'}}>
+                            <span style={{fontSize:24}}>📷</span>
+                            <span>Foto {i+1}{i===0?' *':''}</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" capture="environment"
+                          style={{display:'none'}}
+                          onChange={e => handlePhotoChange(i, e.target.files[0])} />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Firma */}
+              <div style={s.field}>
+                <label style={s.label}>Firma del destinatario *</label>
+                <div style={{border:'1px solid #ddd', borderRadius:8, overflow:'hidden', background:'#fff'}}>
+                  <canvas ref={canvasRef} width={460} height={150}
+                    style={{width:'100%', height:150, cursor:'crosshair', touchAction:'none'}}
+                    onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+                    onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} />
+                </div>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:6}}>
+                  <span style={{fontSize:11, color:'#aaa'}}>Firma con el dedo o mouse</span>
+                  <button onClick={clearCanvas} style={{fontSize:12, color:'#EF4444', background:'none', border:'none', cursor:'pointer'}}>
+                    Limpiar firma
+                  </button>
+                </div>
+              </div>
+
+              <div style={s.modalBtns}>
+                <button style={s.cancelBtn} onClick={resetPOD} disabled={podProcessing}>Cancelar</button>
+                <button style={{...s.confirmBtn, opacity: podProcessing ? 0.6:1}}
+                  onClick={submitPOD} disabled={podProcessing}>
+                  {podProcessing ? 'Guardando...' : '✅ Confirmar Entrega'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -295,7 +521,7 @@ export default function DriverPanel() {
           <h2 style={s.sectionTitle}>Mis órdenes activas</h2>
           <span style={s.count}>{orders.length}</span>
         </div>
-        
+
         {orders.length === 0 && (
           <div style={s.empty}>
             <p style={s.emptyIcon}>📦</p>
@@ -303,7 +529,7 @@ export default function DriverPanel() {
             <p style={s.emptyHint}>Escanea el código QR de un paquete para comenzar</p>
           </div>
         )}
-        
+
         <div style={s.ordersList}>
           {orders.map(order => (
             <div key={order.id} style={s.orderCard}>
