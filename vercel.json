@@ -1,4 +1,0 @@
-﻿{
-  "buildCommand": "next build",
-  "outputDirectory": ".next"
-}
