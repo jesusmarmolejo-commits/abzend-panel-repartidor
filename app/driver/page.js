@@ -370,3 +370,5 @@ const s = {
   confirmBtn: { padding:'8px 18px', background:'#0F6E56', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
   noTransitions: { textAlign:'center', padding:'1rem' },
 }
+// Panel repartidor ABZEND
+'use client'
