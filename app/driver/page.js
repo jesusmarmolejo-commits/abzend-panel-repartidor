@@ -75,54 +75,59 @@ export default function DriverPanel() {
   }
 
   const updateStatus = async () => {
-    if (!selectedTransition) return
-    setProcessing(true)
-    try {
-      const supabase = createClient()
-      const now = new Date().toISOString()
-      const transition = ALLOWED_TRANSITIONS[selectedOrder.status]?.find(t => t.value === selectedTransition)
-      const extra = {}
-      if (selectedTransition === 'assigned') extra.driver_id = driverId
-      if (selectedTransition === 'delivered') extra.delivered_at = now
+  if (!selectedTransition) return
+  setProcessing(true)
+  try {
+    const supabase = createClient()
+    const now = new Date().toISOString()
+    const transition = ALLOWED_TRANSITIONS[selectedOrder.status]?.find(t => t.value === selectedTransition)
+    const extra = {}
+    if (selectedTransition === 'assigned') extra.driver_id = driverId
+    if (selectedTransition === 'delivered') extra.delivered_at = now
 
-      const { error } = await supabase.from('orders')
-        .update({ status: selectedTransition, status_updated_at: now, ...extra })
-        .eq('id', selectedOrder.id)
-      if (error) throw error
+    const { error } = await supabase.from('orders')
+      .update({ status: selectedTransition, status_updated_at: now, ...extra })
+      .eq('id', selectedOrder.id)
+    if (error) throw error
 
-      // Obtener ubicación del repartidor
-      let lat = null, lng = null
-      if (navigator.geolocation && selectedTransition === 'in_transit') {
-        try {
-          const pos = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
-          })
-          lat = pos.coords.latitude
-          lng = pos.coords.longitude
-        } catch(geoErr) {
-          console.warn('No se pudo obtener ubicación GPS:', geoErr)
-        }
+    // Obtener ubicación del repartidor
+    let lat = null, lng = null
+    if (navigator.geolocation && selectedTransition === 'in_transit') {
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+        })
+        lat = pos.coords.latitude
+        lng = pos.coords.longitude
+      } catch(geoErr) {
+        console.warn('No se pudo obtener ubicación GPS:', geoErr)
       }
-
-      await supabase.from('order_events').insert({
-        order_id: selectedOrder.id,
-        status: selectedTransition,
-        status_code: transition?.code || null,
-        note: `Actualizado por repartidor`,
-        lat,
-        lng
-      })
-
-      setMsg(`Orden ${selectedOrder.tracking_code}: ${STATUS_LABEL[selectedTransition]}`)
-      setSelectedOrder(null)
-      await loadOrders(supabase, driverId)
-    } catch(e) {
-      setMsg('Error: ' + e.message)
-    } finally {
-      setProcessing(false)
+      
+      // Abrir Google Maps (fuera del try-catch de GPS)
+      if (selectedOrder.dest_address) {
+        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.dest_address)}`
+        window.open(mapsUrl, '_blank')
+      }
     }
-  }
 
+    await supabase.from('order_events').insert({
+      order_id: selectedOrder.id,
+      status: selectedTransition,
+      status_code: transition?.code || null,
+      note: `Actualizado por repartidor`,
+      lat,
+      lng
+    })
+
+    setMsg(`Orden ${selectedOrder.tracking_code}: ${STATUS_LABEL[selectedTransition]}`)
+    setSelectedOrder(null)
+    await loadOrders(supabase, driverId)
+  } catch(e) {
+    setMsg('Error: ' + e.message)
+  } finally {
+    setProcessing(false)
+  }
+}
   const scanQR = async () => {
     if (!qrInput.trim()) return
     setProcessing(true)
