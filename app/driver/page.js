@@ -48,6 +48,7 @@ export default function DriverPanel() {
   const [signature, setSignature] = useState(null)
   const [signaturePreview, setSignaturePreview] = useState(null)
   const [podProcessing, setPodProcessing] = useState(false)
+  const [podSummary, setPodSummary] = useState(null)
   const canvasRef = useRef(null)
   const isDrawing = useRef(false)
   const router = useRouter()
@@ -286,9 +287,15 @@ export default function DriverPanel() {
         lat, lng
       })
 
-      setMsg(`✅ Orden ${podOrder.tracking_code} entregada con POD`)
-      resetPOD()
       await loadOrders(supabase, driverId)
+setPodSummary({
+  tracking_code: podOrder.tracking_code,
+  receiver_name: receiverName,
+  receiver_type: receiverType,
+  photos: photoPreviews.filter(p => p !== null),
+  signature: signaturePreview,
+  timestamp: new Date().toLocaleString('es-MX')
+})
     } catch(e) {
       setMsg('❌ Error: ' + e.message)
     } finally {
@@ -297,15 +304,16 @@ export default function DriverPanel() {
   }
 
   const resetPOD = () => {
-    setShowPOD(false)
-    setPodOrder(null)
-    setReceiverName('')
-    setReceiverType('titular')
-    setPhotos([null, null, null, null])
-    setPhotoPreviews([null, null, null, null])
-    setSignature(null)
-    setSignaturePreview(null)
-  }
+  setShowPOD(false)
+  setPodOrder(null)
+  setReceiverName('')
+  setReceiverType('titular')
+  setPhotos([null, null, null, null])
+  setPhotoPreviews([null, null, null, null])
+  setSignature(null)
+  setSignaturePreview(null)
+  setPodSummary(null)
+}
 
   const scanQR = async () => {
     if (!qrInput.trim()) return
@@ -437,85 +445,126 @@ export default function DriverPanel() {
         )}
 
         {/* Modal POD */}
-        {showPOD && podOrder && (
-          <div style={s.modalOverlay}>
-            <div style={{...s.modal, maxWidth:500, maxHeight:'90vh', overflowY:'auto'}}>
-              <h3 style={s.modalTitle}>📸 Prueba de Entrega</h3>
-              <p style={s.modalSub}>#{podOrder.tracking_code}</p>
-              <p style={{...s.modalSub, marginBottom:'1rem'}}>{podOrder.dest_address}</p>
+        {showPOD && (
+  <div style={s.modalOverlay}>
+    <div style={{...s.modal, maxWidth:500, maxHeight:'90vh', overflowY:'auto'}}>
 
-              {/* Quien recibe */}
-              <div style={s.field}>
-                <label style={s.label}>Nombre de quien recibe *</label>
-                <input style={s.input} placeholder="Nombre completo"
-                  value={receiverName} onChange={e => setReceiverName(e.target.value)} />
-              </div>
+      {/* Vista resumen */}
+      {podSummary ? (
+        <>
+          <div style={{textAlign:'center', marginBottom:'1rem'}}>
+            <div style={{fontSize:48}}>✅</div>
+            <h3 style={{fontSize:18, fontWeight:700, color:'#0F6E56', margin:'8px 0 4px'}}>
+              Orden finalizada con éxito
+            </h3>
+            <p style={{fontSize:13, color:'#888'}}>#{podSummary.tracking_code}</p>
+          </div>
 
-              <div style={s.field}>
-                <label style={s.label}>Relación con el destinatario *</label>
-                <select style={s.input} value={receiverType} onChange={e => setReceiverType(e.target.value)}>
-                  {RECEIVER_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
+          <div style={{background:'#F5F5F5', borderRadius:8, padding:'1rem', marginBottom:'1rem'}}>
+            <div style={{fontSize:13, marginBottom:6}}><b>Recibió:</b> {podSummary.receiver_name}</div>
+            <div style={{fontSize:13, marginBottom:6}}><b>Relación:</b> {RECEIVER_TYPES.find(t => t.value === podSummary.receiver_type)?.label}</div>
+            <div style={{fontSize:13, color:'#888'}}><b>Fecha:</b> {podSummary.timestamp}</div>
+          </div>
 
-              {/* Fotos */}
-              <div style={s.field}>
-                <label style={s.label}>Fotos del paquete (mín. 1, máx. 4) *</label>
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
-                  {[0,1,2,3].map(i => (
-                    <div key={i}>
-                      <label style={{
-                        display:'block', border:'2px dashed #ddd', borderRadius:8,
-                        cursor:'pointer', overflow:'hidden', aspectRatio:'1',
-                        background: photoPreviews[i] ? 'transparent' : '#f9f9f9'
-                      }}>
-                        {photoPreviews[i] ? (
-                          <img src={photoPreviews[i]} style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                        ) : (
-                          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#aaa',fontSize:12,gap:4,padding:'1rem'}}>
-                            <span style={{fontSize:24}}>📷</span>
-                            <span>Foto {i+1}{i===0?' *':''}</span>
-                          </div>
-                        )}
-                        <input type="file" accept="image/*" capture="environment"
-                          style={{display:'none'}}
-                          onChange={e => handlePhotoChange(i, e.target.files[0])} />
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Firma */}
-              <div style={s.field}>
-                <label style={s.label}>Firma del destinatario *</label>
-                <div style={{border:'1px solid #ddd', borderRadius:8, overflow:'hidden', background:'#fff'}}>
-                  <canvas ref={canvasRef} width={460} height={150}
-                    style={{width:'100%', height:150, cursor:'crosshair', touchAction:'none'}}
-                    onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
-                    onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} />
-                </div>
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:6}}>
-                  <span style={{fontSize:11, color:'#aaa'}}>Firma con el dedo o mouse</span>
-                  <button onClick={clearCanvas} style={{fontSize:12, color:'#EF4444', background:'none', border:'none', cursor:'pointer'}}>
-                    Limpiar firma
-                  </button>
-                </div>
-              </div>
-
-              <div style={s.modalBtns}>
-                <button style={s.cancelBtn} onClick={resetPOD} disabled={podProcessing}>Cancelar</button>
-                <button style={{...s.confirmBtn, opacity: podProcessing ? 0.6:1}}
-                  onClick={submitPOD} disabled={podProcessing}>
-                  {podProcessing ? 'Guardando...' : '✅ Confirmar Entrega'}
-                </button>
+          {podSummary.photos.length > 0 && (
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:13, color:'#666', marginBottom:6}}><b>Fotos ({podSummary.photos.length})</b></div>
+              <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6}}>
+                {podSummary.photos.map((p, i) => (
+                  <img key={i} src={p} style={{width:'100%', aspectRatio:'1', objectFit:'cover', borderRadius:6}} />
+                ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
+          {podSummary.signature && (
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:13, color:'#666', marginBottom:6}}><b>Firma</b></div>
+              <img src={podSummary.signature} style={{width:'100%', border:'1px solid #eee', borderRadius:6}} />
+            </div>
+          )}
+
+          <button style={{...s.confirmBtn, width:'100%', textAlign:'center'}}
+            onClick={() => { setPodSummary(null); resetPOD() }}>
+            Continuar →
+          </button>
+        </>
+      ) : (
+        <>
+          <h3 style={s.modalTitle}>📸 Prueba de Entrega</h3>
+          <p style={s.modalSub}>#{podOrder?.tracking_code}</p>
+          <p style={{...s.modalSub, marginBottom:'1rem'}}>{podOrder?.dest_address}</p>
+
+          <div style={s.field}>
+            <label style={s.label}>Nombre de quien recibe *</label>
+            <input style={s.input} placeholder="Nombre completo"
+              value={receiverName} onChange={e => setReceiverName(e.target.value)} />
+          </div>
+
+          <div style={s.field}>
+            <label style={s.label}>Relación con el destinatario *</label>
+            <select style={s.input} value={receiverType} onChange={e => setReceiverType(e.target.value)}>
+              {RECEIVER_TYPES.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={s.field}>
+            <label style={s.label}>Fotos del paquete (mín. 1, máx. 4) *</label>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+              {[0,1,2,3].map(i => (
+                <div key={i}>
+                  <label style={{
+                    display:'block', border:'2px dashed #ddd', borderRadius:8,
+                    cursor:'pointer', overflow:'hidden', aspectRatio:'1',
+                    background: photoPreviews[i] ? 'transparent' : '#f9f9f9'
+                  }}>
+                    {photoPreviews[i] ? (
+                      <img src={photoPreviews[i]} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                    ) : (
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#aaa',fontSize:12,gap:4,padding:'1rem'}}>
+                        <span style={{fontSize:24}}>📷</span>
+                        <span>Foto {i+1}{i===0?' *':''}</span>
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" capture="environment"
+                      style={{display:'none'}}
+                      onChange={e => handlePhotoChange(i, e.target.files[0])} />
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={s.field}>
+            <label style={s.label}>Firma del destinatario *</label>
+            <div style={{border:'1px solid #ddd', borderRadius:8, overflow:'hidden', background:'#fff'}}>
+              <canvas ref={canvasRef} width={460} height={150}
+                style={{width:'100%', height:150, cursor:'crosshair', touchAction:'none'}}
+                onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+                onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} />
+            </div>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:6}}>
+              <span style={{fontSize:11, color:'#aaa'}}>Firma con el dedo o mouse</span>
+              <button onClick={clearCanvas} style={{fontSize:12, color:'#EF4444', background:'none', border:'none', cursor:'pointer'}}>
+                Limpiar firma
+              </button>
+            </div>
+          </div>
+
+          <div style={s.modalBtns}>
+            <button style={s.cancelBtn} onClick={resetPOD} disabled={podProcessing}>Cancelar</button>
+            <button style={{...s.confirmBtn, opacity: podProcessing ? 0.6:1}}
+              onClick={submitPOD} disabled={podProcessing}>
+              {podProcessing ? 'Guardando...' : '✅ Confirmar Entrega'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+)}
         {/* Mis órdenes activas */}
         <div style={s.sectionHeader}>
           <h2 style={s.sectionTitle}>Mis órdenes activas</h2>
