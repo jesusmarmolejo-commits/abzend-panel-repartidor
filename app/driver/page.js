@@ -205,7 +205,6 @@ export default function DriverPanel() {
     // Capturar firma directamente del canvas en este momento
     const canvas = canvasRef.current
     const currentSignaturePreview = canvas.toDataURL()
-    const isEmpty = !currentSignaturePreview || currentSignaturePreview === 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcYAAACWCAYAAABzkOAlAAAAAXNSR0IArs4c6QAAAyhJREFUeF7t1AEJAAAIAiD/0/ZvDlkOPMQ="
     
     // Obtener blob actual del canvas
     let currentSignatureBlob = signature
