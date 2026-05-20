@@ -93,7 +93,7 @@ export default function DriverPanel() {
         .eq('driver_id', dId).in('status',['assigned','picked_up','in_transit'])
         .order('created_at',{ascending:false}),
       supabase.from('transport_orders').select('*, unit:unidad_id(nombre), stops:transport_order_stops(*)')
-        .eq('driver_id', dId).in('status',['confirmed','in_transit'])
+        .eq('driver_id', dId).in('status',['pending','confirmed','in_transit','CREADO','RECOLECTADO','EN_ESTACION','EN_RUTA'])
         .order('created_at',{ascending:false}),
     ])
     setOrders(assigned || [])
