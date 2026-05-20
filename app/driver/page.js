@@ -43,7 +43,7 @@ export default function DriverPanel() {
   const [driverId, setDriverId]   = useState(null)
   const [orders, setOrders]       = useState([])
   const [loading, setLoading]     = useState(true)
-  const [activeTab, setActiveTab] = useState('entregas')
+  const [activeTab, setActiveTab] = useState('hoy')
   const [selectedOrder, setSelectedOrder]         = useState(null)
   const [selectedTransition, setSelectedTransition] = useState('')
   const [processing, setProcessing]               = useState(false)
@@ -264,8 +264,9 @@ export default function DriverPanel() {
         {/* TABS */}
         <div style={{display:'flex',borderBottom:'1px solid #E5E7EB',marginBottom:'1.5rem',gap:4}}>
           {[
-            {id:'entregas', label:'📦 Mis Entregas', count:orders.length},
-            {id:'viajes',   label:'🚛 Mis Viajes',   count:transportOrders.length},
+            {id:'hoy',      label:'🗓️ Hoy',          count:orders.length + transportOrders.length},
+            {id:'entregas', label:'📦 Paquetería',    count:orders.length},
+            {id:'viajes',   label:'🚛 Transporte',    count:transportOrders.length},
           ].map(tab=>(
             <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
               style={{padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,
@@ -281,6 +282,107 @@ export default function DriverPanel() {
             </button>
           ))}
         </div>
+
+        {/* ── TAB HOY (MIXTO) ── */}
+        {activeTab === 'hoy' && (() => {
+          const mixedItems = [
+            ...orders.map(o => ({ ...o, _tipo: 'paquete' })),
+            ...transportOrders.map(o => ({ ...o, _tipo: 'transporte' })),
+          ].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+          return (
+            <div>
+              <div style={s.sectionHeader}>
+                <h2 style={s.sectionTitle}>Trabajo del día</h2>
+                <span style={s.count}>{mixedItems.length}</span>
+              </div>
+
+              {mixedItems.length === 0 ? (
+                <div style={s.empty}>
+                  <p style={s.emptyIcon}>🗓️</p>
+                  <p style={s.emptyText}>Sin trabajo asignado hoy</p>
+                  <p style={s.emptyHint}>El administrador te asignará paquetes y viajes</p>
+                </div>
+              ) : (
+                <div style={s.ordersList}>
+                  {mixedItems.map(item => {
+                    const isTransporte = item._tipo === 'transporte'
+                    const accentColor  = isTransporte ? '#185FA5' : '#0F6E56'
+                    const bgColor      = isTransporte ? '#EFF6FF' : '#E1F5EE'
+
+                    return (
+                      <div key={item.id} style={{...s.orderCard, borderLeft: `4px solid ${accentColor}`}}>
+                        <div style={s.orderRow}>
+                          <div style={s.orderLeft}>
+                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                              <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:bgColor,color:accentColor}}>
+                                {isTransporte ? '🚛 LTL' : '📦 Paquete'}
+                              </span>
+                              <span style={s.orderCode}>#{item.tracking_code}</span>
+                            </div>
+                            {isTransporte ? (
+                              <>
+                                <div style={s.orderRoute}>{item.ruta}</div>
+                                {item.stops?.length > 0 && (
+                                  <div style={{display:'flex',alignItems:'center',gap:3,flexWrap:'wrap',marginTop:4}}>
+                                    {[...item.stops].sort((a,b)=>a.orden-b.orden).map((stop,i)=>(
+                                      <span key={i} style={{display:'flex',alignItems:'center',gap:3}}>
+                                        <span style={{fontSize:10,padding:'1px 6px',borderRadius:20,
+                                          background:stop.tipo==='carga'?'#E1F5EE':'#EFF6FF',
+                                          color:stop.tipo==='carga'?'#0F6E56':'#185FA5'}}>
+                                          {stop.tipo==='carga'?'📦':'📍'} {stop.alias||stop.calle?.substring(0,15)||'Parada'}
+                                        </span>
+                                        {i < item.stops.length-1 && <span style={{color:'#bbb',fontSize:10}}>→</span>}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div style={s.orderRoute}>{item.origin_address} → {item.dest_address}</div>
+                            )}
+                            <div style={s.orderMeta}>{fmtDate(item.created_at)}</div>
+                          </div>
+                          <div style={s.orderRight}>
+                            {isTransporte ? (
+                              <>
+                                <span style={{...s.badge,background:TRANSPORT_STATUS_COLOR[item.status],color:TRANSPORT_STATUS_TEXT[item.status]}}>
+                                  {TRANSPORT_STATUS_LABEL[item.status]}
+                                </span>
+                                {TRANSPORT_TRANSITIONS[item.status]?.length > 0 && (
+                                  <button style={{...s.actionBtn,background:accentColor}} onClick={()=>setSelectedTransport(item)}>
+                                    Actualizar
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <span style={{...s.badge,background:STATUS_COLOR[item.status],color:STATUS_TEXT[item.status]}}>
+                                  {STATUS_LABEL[item.status]}
+                                </span>
+                                {ALLOWED_TRANSITIONS[item.status]?.length > 0 && (
+                                  <button style={s.actionBtn} onClick={()=>openModal(item)}>
+                                    Actualizar
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {isTransporte && (
+                          <div style={{borderTop:'1px solid #f0f0f0',paddingTop:8,marginTop:8,display:'flex',justifyContent:'space-between',fontSize:12,color:'#888'}}>
+                            <span>{item.unit?.nombre && `🚛 ${item.unit.nombre}`}</span>
+                            <span style={{fontWeight:600,color:'#222'}}>{fmtMoney(item.total)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ── TAB ENTREGAS ── */}
         {activeTab === 'entregas' && (
