@@ -206,6 +206,28 @@ export default function DriverPanel() {
       })
       if (error) throw error
 
+      // Obtener email del remitente (client)
+      const { data: clientData } = await supabase
+        .from('users').select('email,full_name')
+        .eq('id', selectedOrder.client_id).single()
+
+      // Llamar Edge Function para email transaccional
+      try {
+        await supabase.functions.invoke('notify-delivery-attempt', {
+          body: {
+            attempt_number:  data.intentos,
+            tracking_code:   selectedOrder.tracking_code,
+            reason:          REJECTION_REASONS.find(r=>r.value===selectedRejectionReason)?.label || selectedRejectionReason,
+            recipient_name:  selectedOrder.recipient_name  || 'Cliente',
+            recipient_email: selectedOrder.recipient_email || clientData?.email || '',
+            sender_name:     selectedOrder.sender_name     || clientData?.full_name || 'Remitente',
+            sender_email:    clientData?.email             || '',
+          }
+        })
+      } catch(emailErr) {
+        console.warn('Email no enviado:', emailErr)
+      }
+
       if (data.max_reached) {
         setMsg(`🚫 ${selectedOrder.tracking_code}: 3 intentos → Regreso a Cliente`)
       } else {
