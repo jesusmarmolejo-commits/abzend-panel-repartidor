@@ -105,7 +105,7 @@ export default function DriverPanel() {
   const loadAll = async (supabase, dId) => {
     const [{ data: assigned }, { data: tOrders }] = await Promise.all([
       supabase.from('orders').select('*, client:client_id(full_name,phone)')
-        .eq('driver_id', dId).in('status',['assigned','picked_up','in_transit'])
+        .eq('driver_id', dId).in('status',['assigned','picked_up','in_transit','intento_fallido'])
         .order('created_at',{ascending:false}),
       supabase.from('transport_orders').select('*, unit:unidad_id(nombre), stops:transport_order_stops(*)')
         .eq('driver_id', dId).in('status',['pending','confirmed','in_transit','CREADO','RECOLECTADO','EN_ESTACION','EN_RUTA'])
