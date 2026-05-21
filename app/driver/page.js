@@ -3,9 +3,17 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
-const STATUS_LABEL = { pending:'Pendiente', assigned:'Asignado', picked_up:'Recogido', in_transit:'En tránsito', delivered:'Entregado' }
-const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#E1F5EE', picked_up:'#E1F5EE', in_transit:'#E6F1FB', delivered:'#EAF3DE' }
-const STATUS_TEXT  = { pending:'#854F0B', assigned:'#0F6E56', picked_up:'#0F6E56', in_transit:'#185FA5', delivered:'#3B6D11' }
+const STATUS_LABEL = { pending:'Pendiente', assigned:'Asignado', picked_up:'Recogido', in_transit:'En tránsito', delivered:'Entregado', intento_fallido:'Intento Fallido', regreso_a_cliente:'Regreso a Cliente', devuelto_a_remitente:'Devuelto a Remitente' }
+const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#E1F5EE', picked_up:'#E1F5EE', in_transit:'#E6F1FB', delivered:'#EAF3DE', intento_fallido:'#FEE2E2', regreso_a_cliente:'#FEE2E2', devuelto_a_remitente:'#F3F4F6' }
+const STATUS_TEXT  = { pending:'#854F0B', assigned:'#0F6E56', picked_up:'#0F6E56', in_transit:'#185FA5', delivered:'#3B6D11', intento_fallido:'#991B1B', regreso_a_cliente:'#991B1B', devuelto_a_remitente:'#374151' }
+
+const REJECTION_REASONS = [
+  { value:'CLIENTE_AUSENTE',     label:'Cliente Ausente' },
+  { value:'DIRECCION_INCORRECTA',label:'Dirección Incorrecta' },
+  { value:'RECHAZADO',           label:'Rechazado por Cliente' },
+  { value:'DANO',                label:'Paquete con Daño' },
+  { value:'ZONA_INACCESIBLE',    label:'Zona Inaccesible' },
+]
 
 const TRANSPORT_STATUS_LABEL = { pending:'Pendiente', confirmed:'Confirmado', in_transit:'En tránsito', delivered:'Entregado', cancelled:'Cancelado' }
 const TRANSPORT_STATUS_COLOR = { pending:'#FAEEDA', confirmed:'#E1F5EE', in_transit:'#E6F1FB', delivered:'#EAF3DE', cancelled:'#FEE2E2' }
@@ -13,11 +21,14 @@ const TRANSPORT_STATUS_TEXT  = { pending:'#854F0B', confirmed:'#0F6E56', in_tran
 const UNIDAD_LABEL = { '1.5ton':'1.5 Ton', '3.5ton':'3.5 Ton', 'rabon':'Rabón', 'torton':'Tórton' }
 
 const ALLOWED_TRANSITIONS = {
-  assigned:   [{ value:'picked_up',  label:'Confirmar recolección', code:'PUP' },
-               { value:'in_transit', label:'En tránsito',           code:'INT' }],
-  picked_up:  [{ value:'in_transit', label:'En tránsito',           code:'INT' },
-               { value:'delivered',  label:'Entregado',             code:'DLV' }],
-  in_transit: [{ value:'delivered',  label:'Entregado',             code:'DLV' }],
+  assigned:        [{ value:'picked_up',       label:'Confirmar recolección', code:'PUP' },
+                    { value:'in_transit',       label:'En tránsito',           code:'INT' }],
+  picked_up:       [{ value:'in_transit',       label:'En tránsito',           code:'INT' },
+                    { value:'intento_fallido',  label:'⚠️ Intento Fallido',    code:'FAL' }],
+  in_transit:      [{ value:'delivered',        label:'Entregado',             code:'DLV' },
+                    { value:'intento_fallido',  label:'⚠️ Intento Fallido',    code:'FAL' }],
+  intento_fallido: [{ value:'in_transit',       label:'Reintentar entrega',    code:'INT' },
+                    { value:'intento_fallido',  label:'⚠️ Intento Fallido',    code:'FAL' }],
 }
 
 const TRANSPORT_TRANSITIONS = {
@@ -54,6 +65,10 @@ export default function DriverPanel() {
   const [transportOrders, setTransportOrders]       = useState([])
   const [selectedTransport, setSelectedTransport]   = useState(null)
   const [transportProcessing, setTransportProcessing] = useState(false)
+
+  // Excepciones Flow
+  const [showRejectionModal, setShowRejectionModal] = useState(false)
+  const [selectedRejectionReason, setSelectedRejectionReason] = useState('CLIENTE_AUSENTE')
 
   // POD
   const [showPOD, setShowPOD]               = useState(false)
@@ -114,6 +129,10 @@ export default function DriverPanel() {
       setShowPOD(true)
       return
     }
+    if (selectedTransition === 'intento_fallido') {
+      setShowRejectionModal(true)
+      return
+    }
     setProcessing(true)
     try {
       const supabase = createClient()
@@ -148,6 +167,31 @@ export default function DriverPanel() {
       await loadAll(supabase, driverId)
     } catch(e) { setMsg('Error: '+e.message) }
     finally { setTransportProcessing(false) }
+  }
+
+  const submitRejection = async () => {
+    if (!selectedOrder || !selectedRejectionReason) return
+    setProcessing(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.rpc('register_delivery_attempt', {
+        p_order_id: selectedOrder.id,
+        p_reason: selectedRejectionReason,
+        p_driver_id: driverId
+      })
+      if (error) throw error
+      const result = data
+      if (result.max_reached) {
+        setMsg(`🚫 ${selectedOrder.tracking_code}: 3 intentos alcanzados → Regreso a Cliente`)
+      } else {
+        setMsg(`⚠️ Intento ${result.intentos}/3 registrado: ${REJECTION_REASONS.find(r=>r.value===selectedRejectionReason)?.label}`)
+      }
+      setShowRejectionModal(false)
+      setSelectedOrder(null)
+      setSelectedRejectionReason('CLIENTE_AUSENTE')
+      await loadAll(supabase, driverId)
+    } catch(e) { setMsg('❌ Error: '+e.message) }
+    finally { setProcessing(false) }
   }
 
   const handlePhotoChange = (index, file) => {
@@ -585,6 +629,41 @@ export default function DriverPanel() {
                 </button>
               ))}
               <button style={{...s.cancelBtn,width:'100%'}} onClick={()=>setSelectedTransport(null)}>Cerrar</button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL RECHAZO / INTENTO FALLIDO */}
+        {showRejectionModal && selectedOrder && (
+          <div style={s.modalOverlay}>
+            <div style={s.modal}>
+              <h3 style={s.modalTitle}>⚠️ Intento Fallido</h3>
+              <p style={s.modalSub}>#{selectedOrder.tracking_code}</p>
+              <p style={{...s.modalSub, marginBottom:'1rem'}}>
+                Intentos previos: <strong>{selectedOrder.intentos_entrega || 0}/3</strong>
+                {(selectedOrder.intentos_entrega || 0) >= 2 && (
+                  <span style={{color:'#DC2626', fontWeight:700}}> — ⚠️ Último intento</span>
+                )}
+              </p>
+              <div style={s.field}>
+                <label style={s.label}>Razón de rechazo *</label>
+                {REJECTION_REASONS.map(r => (
+                  <label key={r.value} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',cursor:'pointer',borderBottom:'1px solid #f0f0f0'}}>
+                    <input type="radio" name="rejection" value={r.value}
+                      checked={selectedRejectionReason === r.value}
+                      onChange={() => setSelectedRejectionReason(r.value)} />
+                    <span style={{fontSize:13}}>{r.label}</span>
+                  </label>
+                ))}
+              </div>
+              <div style={s.modalBtns}>
+                <button style={s.cancelBtn} onClick={() => { setShowRejectionModal(false); setSelectedRejectionReason('CLIENTE_AUSENTE') }} disabled={processing}>
+                  Cancelar
+                </button>
+                <button style={{...s.confirmBtn, background:'#DC2626', opacity:processing?0.6:1}} onClick={submitRejection} disabled={processing}>
+                  {processing ? 'Registrando...' : 'Registrar Intento'}
+                </button>
+              </div>
             </div>
           </div>
         )}
