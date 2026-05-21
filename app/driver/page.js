@@ -69,6 +69,8 @@ export default function DriverPanel() {
   // Excepciones Flow
   const [showRejectionModal, setShowRejectionModal] = useState(false)
   const [selectedRejectionReason, setSelectedRejectionReason] = useState('CLIENTE_AUSENTE')
+  const [attemptPhoto, setAttemptPhoto]         = useState(null)
+  const [attemptPhotoPreview, setAttemptPhotoPreview] = useState(null)
 
   // POD
   const [showPOD, setShowPOD]               = useState(false)
@@ -171,24 +173,48 @@ export default function DriverPanel() {
 
   const submitRejection = async () => {
     if (!selectedOrder || !selectedRejectionReason) return
+    if (!attemptPhoto) { setMsg('❌ Se requiere foto del intento'); return }
     setProcessing(true)
     try {
       const supabase = createClient()
+      const now = Date.now()
+      const attemptNum = (selectedOrder.intentos_entrega || 0) + 1
+      const path = `${selectedOrder.id}/attempt_${attemptNum}_${now}`
+
+      // Subir foto
+      const { error: uploadError } = await supabase.storage
+        .from('pod-media').upload(path, attemptPhoto, { contentType: attemptPhoto.type || 'image/jpeg' })
+      if (uploadError) throw uploadError
+      const { data: urlData } = supabase.storage.from('pod-media').getPublicUrl(path)
+      const photoUrl = urlData.publicUrl
+
+      // GPS
+      let lat = null, lng = null
+      try {
+        const pos = await new Promise((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }))
+        lat = pos.coords.latitude; lng = pos.coords.longitude
+      } catch(e) {}
+
       const { data, error } = await supabase.rpc('register_delivery_attempt', {
-        p_order_id: selectedOrder.id,
-        p_reason: selectedRejectionReason,
-        p_driver_id: driverId
+        p_order_id:  selectedOrder.id,
+        p_reason:    selectedRejectionReason,
+        p_driver_id: driverId,
+        p_photo_url: photoUrl,
+        p_lat:       lat,
+        p_lng:       lng
       })
       if (error) throw error
-      const result = data
-      if (result.max_reached) {
-        setMsg(`🚫 ${selectedOrder.tracking_code}: 3 intentos alcanzados → Regreso a Cliente`)
+
+      if (data.max_reached) {
+        setMsg(`🚫 ${selectedOrder.tracking_code}: 3 intentos → Regreso a Cliente`)
       } else {
-        setMsg(`⚠️ Intento ${result.intentos}/3 registrado: ${REJECTION_REASONS.find(r=>r.value===selectedRejectionReason)?.label}`)
+        setMsg(`⚠️ Intento ${data.intentos}/3: ${REJECTION_REASONS.find(r=>r.value===selectedRejectionReason)?.label}`)
       }
       setShowRejectionModal(false)
       setSelectedOrder(null)
       setSelectedRejectionReason('CLIENTE_AUSENTE')
+      setAttemptPhoto(null); setAttemptPhotoPreview(null)
       await loadAll(supabase, driverId)
     } catch(e) { setMsg('❌ Error: '+e.message) }
     finally { setProcessing(false) }
@@ -656,8 +682,42 @@ export default function DriverPanel() {
                   </label>
                 ))}
               </div>
+
+              <div style={s.field}>
+                <label style={s.label}>Foto del intento *</label>
+                <label style={{display:'block',border:'2px dashed #ddd',borderRadius:8,cursor:'pointer',overflow:'hidden',aspectRatio:'16/9',background:attemptPhotoPreview?'transparent':'#f9f9f9'}}>
+                  {attemptPhotoPreview ? (
+                    <img src={attemptPhotoPreview} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                  ) : (
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#aaa',fontSize:13,gap:6,padding:'1rem'}}>
+                      <span style={{fontSize:32}}>📷</span>
+                      <span>Tomar foto del intento</span>
+                      <span style={{fontSize:11,color:'#ccc'}}>GPS y timestamp se registran automáticamente</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" capture="environment" style={{display:'none'}}
+                    onChange={e => {
+                      const file = e.target.files[0]; if (!file) return
+                      setAttemptPhoto(file)
+                      const reader = new FileReader()
+                      reader.onload = ev => setAttemptPhotoPreview(ev.target.result)
+                      reader.readAsDataURL(file)
+                    }} />
+                </label>
+                {attemptPhotoPreview && (
+                  <button onClick={()=>{setAttemptPhoto(null);setAttemptPhotoPreview(null)}}
+                    style={{fontSize:12,color:'#EF4444',background:'none',border:'none',cursor:'pointer',alignSelf:'flex-end',marginTop:4}}>
+                    Eliminar foto
+                  </button>
+                )}
+              </div>
+
               <div style={s.modalBtns}>
-                <button style={s.cancelBtn} onClick={() => { setShowRejectionModal(false); setSelectedRejectionReason('CLIENTE_AUSENTE') }} disabled={processing}>
+                <button style={s.cancelBtn} onClick={() => {
+                  setShowRejectionModal(false)
+                  setSelectedRejectionReason('CLIENTE_AUSENTE')
+                  setAttemptPhoto(null); setAttemptPhotoPreview(null)
+                }} disabled={processing}>
                   Cancelar
                 </button>
                 <button style={{...s.confirmBtn, background:'#DC2626', opacity:processing?0.6:1}} onClick={submitRejection} disabled={processing}>
