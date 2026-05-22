@@ -499,25 +499,59 @@ export default function DriverPanel() {
                   </div>
                 ) : (
                   <div style={s.ordersList}>
-                    {routeItems.map((item,i)=>(
-                      <div key={i} style={{...s.orderCard,borderLeft:`3px solid ${item.item_type==='ltl'?'#185FA5':'#0F6E56'}`}}>
-                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                          <div>
-                            <span style={{fontSize:11,padding:'2px 6px',borderRadius:10,marginRight:6,
-                              background:item.item_type==='ltl'?'#EFF6FF':'#F0FDF4',
-                              color:item.item_type==='ltl'?'#185FA5':'#0F6E56',fontWeight:600}}>
-                              {item.item_type==='ltl'?'🚛 LTL':'📦 Paquete'}
-                            </span>
-                            <span style={{fontSize:12,fontWeight:600,color:'#222'}}>
-                              {item.order_id?.substring(0,8)||item.transport_order_id?.substring(0,8)}...
-                            </span>
+                    {[...routeItems].sort((a,b)=>(a.stop_order||999)-(b.stop_order||999)).map((item,i)=>{
+                      const order = orders.find(o=>o.id===item.order_id)
+                      const isDelivered = order?.status === 'delivered'
+                      return (
+                        <div key={i} style={{...s.orderCard,
+                          borderLeft:`4px solid ${isDelivered?'#9CA3AF':item.item_type==='ltl'?'#185FA5':'#0F6E56'}`,
+                          opacity:isDelivered?0.55:1}}>
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              {item.stop_order && (
+                                <div style={{background:isDelivered?'#9CA3AF':'#1E293B',color:'#fff',
+                                  fontSize:11,fontWeight:700,width:24,height:24,borderRadius:'50%',
+                                  display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                                  {isDelivered?'✓':item.stop_order}
+                                </div>
+                              )}
+                              <div>
+                                <div style={{fontSize:13,fontWeight:600,color:'#222'}}>
+                                  {order?.tracking_code || item.order_id?.substring(0,8)+'...'}
+                                </div>
+                                {order?.dest_address && (
+                                  <div style={{fontSize:11,color:'#888',marginTop:1,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                                    {order.dest_address}
+                                  </div>
+                                )}
+                                {order?.recipient_name && (
+                                  <div style={{fontSize:11,color:'#888'}}>👤 {order.recipient_name}</div>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+                              {item.estimated_arrival && !isDelivered && (
+                                <span style={{fontSize:11,color:'#185FA5',fontWeight:600}}>
+                                  ⏱ {new Date(item.estimated_arrival).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}
+                                </span>
+                              )}
+                              {item.distance_km && !isDelivered && (
+                                <span style={{fontSize:10,color:'#888'}}>{item.distance_km}km</span>
+                              )}
+                              {isDelivered && (
+                                <span style={{fontSize:11,color:'#166534',fontWeight:600}}>✅ Entregado</span>
+                              )}
+                            </div>
                           </div>
-                          <span style={{fontSize:10,color:'#888'}}>
-                            {item.added_by==='driver_scan'?'📷 Escaneado':'👤 Admin'}
-                          </span>
+                          {order && !isDelivered && order.dest_lat && order.dest_lng && (
+                            <button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&destination=${order.dest_lat},${order.dest_lng}`,'_blank')}
+                              style={{marginTop:8,width:'100%',padding:'6px',background:'#EFF6FF',color:'#185FA5',border:'1px solid #BFDBFE',borderRadius:6,cursor:'pointer',fontSize:11,fontWeight:600}}>
+                              🗺️ Navegar
+                            </button>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
