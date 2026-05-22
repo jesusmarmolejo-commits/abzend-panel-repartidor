@@ -72,6 +72,13 @@ export default function DriverPanel() {
   const [attemptPhoto, setAttemptPhoto]         = useState(null)
   const [attemptPhotoPreview, setAttemptPhotoPreview] = useState(null)
 
+  // Rutas
+  const [activeRoute, setActiveRoute]   = useState(null)
+  const [routeItems, setRouteItems]     = useState([])
+  const [routeQr, setRouteQr]           = useState('')
+  const [routeQrMsg, setRouteQrMsg]     = useState('')
+  const [routeProcessing, setRouteProcessing] = useState(false)
+
   // POD
   const [showPOD, setShowPOD]               = useState(false)
   const [podOrder, setPodOrder]             = useState(null)
@@ -105,16 +112,54 @@ export default function DriverPanel() {
   }, [])
 
   const loadAll = async (supabase, dId) => {
-    const [{ data: assigned }, { data: tOrders }] = await Promise.all([
+    const [{ data: assigned }, { data: tOrders }, { data: route }] = await Promise.all([
       supabase.from('orders').select('*, client:client_id(full_name,phone)')
         .eq('driver_id', dId).in('status',['assigned','picked_up','in_transit','intento_fallido'])
         .order('created_at',{ascending:false}),
       supabase.from('transport_orders').select('*, unit:unidad_id(nombre), stops:transport_order_stops(*)')
         .eq('driver_id', dId).in('status',['pending','confirmed','in_transit','CREADO','RECOLECTADO','EN_ESTACION','EN_RUTA'])
         .order('created_at',{ascending:false}),
+      supabase.from('routes').select('*, items:route_items(id,item_type,order_id,transport_order_id,added_by,added_at)')
+        .eq('driver_id', dId).in('status',['CREADA','EN_RUTA']).maybeSingle(),
     ])
     setOrders(assigned || [])
     setTransportOrders(tOrders || [])
+    setActiveRoute(route || null)
+    setRouteItems(route?.items || [])
+  }
+
+  const escanearGuiaRuta = async () => {
+    if (!routeQr.trim() || !activeRoute) return
+    setRouteProcessing(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.rpc('add_item_to_route', {
+        p_route_id: activeRoute.id,
+        p_tracking: routeQr.trim().toUpperCase(),
+        p_added_by: 'driver_scan'
+      })
+      if (error) throw error
+      setRouteQrMsg(`✅ Guía agregada (${data.type})`)
+      setRouteQr('')
+      await loadAll(supabase, driverId)
+    } catch(e) { setRouteQrMsg('❌ ' + e.message) }
+    finally { setRouteProcessing(false); setTimeout(()=>setRouteQrMsg(''),3000) }
+  }
+
+  const iniciarRuta = async () => {
+    if (!activeRoute || !driverId) return
+    setRouteProcessing(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.rpc('start_route', {
+        p_route_id:  activeRoute.id,
+        p_driver_id: driverId
+      })
+      if (error) throw error
+      setMsg(`🚀 Ruta ${data.route_code} iniciada — ${data.actualizados} paquetes en tránsito`)
+      await loadAll(supabase, driverId)
+    } catch(e) { setMsg('❌ ' + e.message) }
+    finally { setRouteProcessing(false) }
   }
 
   const openModal = (order) => {
@@ -356,9 +401,10 @@ export default function DriverPanel() {
         {/* TABS */}
         <div style={{display:'flex',borderBottom:'1px solid #E5E7EB',marginBottom:'1.5rem',gap:4}}>
           {[
-            {id:'hoy',      label:'🗓️ Hoy',          count:orders.length + transportOrders.length},
-            {id:'entregas', label:'📦 Paquetería',    count:orders.length},
-            {id:'viajes',   label:'🚛 Transporte',    count:transportOrders.length},
+            {id:'ruta',     label:'🗺️ Mi Ruta',       count:routeItems.length,                        alert:!!activeRoute},
+            {id:'hoy',      label:'🗓️ Hoy',           count:orders.length + transportOrders.length},
+            {id:'entregas', label:'📦 Paquetería',     count:orders.length},
+            {id:'viajes',   label:'🚛 Transporte',     count:transportOrders.length},
           ].map(tab=>(
             <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
               style={{padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,
@@ -374,6 +420,110 @@ export default function DriverPanel() {
             </button>
           ))}
         </div>
+
+        {/* ── TAB MI RUTA ── */}
+        {activeTab === 'ruta' && (
+          <div>
+            {!activeRoute ? (
+              <div style={s.empty}>
+                <p style={s.emptyIcon}>🗺️</p>
+                <p style={s.emptyText}>Sin ruta activa</p>
+                <p style={s.emptyHint}>El administrador o la estación te asignará una ruta</p>
+              </div>
+            ) : (
+              <div>
+                {/* Header de ruta */}
+                <div style={{background:'#0F6E56',borderRadius:10,padding:'1rem',marginBottom:'1rem',color:'#fff'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+                    <div>
+                      <div style={{fontSize:11,opacity:0.7,marginBottom:2}}>RUTA ACTIVA</div>
+                      <div style={{fontSize:18,fontWeight:700}}>{activeRoute.route_code}</div>
+                      <div style={{fontSize:12,opacity:0.8,marginTop:2}}>
+                        {activeRoute.type==='linehaul'?'🚛 Linehaul':'📦 Local'} · {activeRoute.status}
+                      </div>
+                    </div>
+                    <div style={{textAlign:'right'}}>
+                      <div style={{fontSize:22,fontWeight:700}}>{routeItems.length}</div>
+                      <div style={{fontSize:11,opacity:0.7}}>guías</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Escanear guía para agregar */}
+                {activeRoute.status === 'CREADA' && (
+                  <div style={s.card}>
+                    <div style={s.cardTitle}>📷 Escanear guía para agregar a ruta</div>
+                    <div style={s.qrRow}>
+                      <input style={s.qrInput}
+                        placeholder="Escanea o escribe el código..."
+                        value={routeQr}
+                        onChange={e=>setRouteQr(e.target.value)}
+                        onKeyDown={e=>e.key==='Enter'&&escanearGuiaRuta()}
+                        disabled={routeProcessing} />
+                      <button style={{...s.qrBtn,opacity:routeProcessing?0.6:1}}
+                        onClick={escanearGuiaRuta} disabled={routeProcessing}>
+                        {routeProcessing?'...':'+ Agregar'}
+                      </button>
+                    </div>
+                    {routeQrMsg && (
+                      <p style={{fontSize:12,marginTop:6,color:routeQrMsg.startsWith('✅')?'#0F6E56':'#DC2626'}}>
+                        {routeQrMsg}
+                      </p>
+                    )}
+                    <p style={{fontSize:12,color:'#888',marginTop:8}}>
+                      Escanea el QR de cada paquete antes de salir de la estación
+                    </p>
+                  </div>
+                )}
+
+                {/* Botón iniciar ruta */}
+                {activeRoute.status === 'CREADA' && routeItems.length > 0 && (
+                  <button
+                    onClick={iniciarRuta}
+                    disabled={routeProcessing}
+                    style={{width:'100%',padding:'14px',background:'#185FA5',color:'#fff',border:'none',borderRadius:10,
+                      cursor:'pointer',fontSize:15,fontWeight:700,marginBottom:'1rem',
+                      opacity:routeProcessing?0.6:1}}>
+                    {routeProcessing ? 'Iniciando...' : '🚀 Iniciar Ruta — Salir a entregar'}
+                  </button>
+                )}
+
+                {/* Lista de guías en ruta */}
+                <div style={s.sectionHeader}>
+                  <h2 style={s.sectionTitle}>Guías en esta ruta</h2>
+                  <span style={s.count}>{routeItems.length}</span>
+                </div>
+                {routeItems.length === 0 ? (
+                  <div style={{...s.empty,padding:'1.5rem'}}>
+                    <p style={{fontSize:13,color:'#888'}}>Escanea guías para agregarlas a la ruta</p>
+                  </div>
+                ) : (
+                  <div style={s.ordersList}>
+                    {routeItems.map((item,i)=>(
+                      <div key={i} style={{...s.orderCard,borderLeft:`3px solid ${item.item_type==='ltl'?'#185FA5':'#0F6E56'}`}}>
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <div>
+                            <span style={{fontSize:11,padding:'2px 6px',borderRadius:10,marginRight:6,
+                              background:item.item_type==='ltl'?'#EFF6FF':'#F0FDF4',
+                              color:item.item_type==='ltl'?'#185FA5':'#0F6E56',fontWeight:600}}>
+                              {item.item_type==='ltl'?'🚛 LTL':'📦 Paquete'}
+                            </span>
+                            <span style={{fontSize:12,fontWeight:600,color:'#222'}}>
+                              {item.order_id?.substring(0,8)||item.transport_order_id?.substring(0,8)}...
+                            </span>
+                          </div>
+                          <span style={{fontSize:10,color:'#888'}}>
+                            {item.added_by==='driver_scan'?'📷 Escaneado':'👤 Admin'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── TAB HOY (MIXTO) ── */}
         {activeTab === 'hoy' && (() => {
