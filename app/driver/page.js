@@ -648,7 +648,6 @@ export default function DriverPanel() {
                         {isTransporte && (
                           <div style={{borderTop:'1px solid #f0f0f0',paddingTop:8,marginTop:8,display:'flex',justifyContent:'space-between',fontSize:12,color:'#888'}}>
                             <span>{item.unit?.nombre && `🚛 ${item.unit.nombre}`}</span>
-                            <span style={{fontWeight:600,color:'#222'}}>{fmtMoney(item.total)}</span>
                           </div>
                         )}
                       </div>
@@ -769,9 +768,8 @@ export default function DriverPanel() {
                         )}
                       </div>
                     </div>
-                    <div style={{borderTop:'1px solid #f0f0f0',paddingTop:8,marginTop:8,display:'flex',justifyContent:'space-between',fontSize:12,color:'#888'}}>
+                    <div style={{borderTop:'1px solid #f0f0f0',paddingTop:8,marginTop:8,fontSize:12,color:'#888'}}>
                       <span>{order.incluye_maniobra&&'✓ Maniobra  '}{order.incluye_reparto&&'✓ Reparto'}</span>
-                      <span style={{fontWeight:600,color:'#222'}}>{fmtMoney(order.total)}</span>
                     </div>
                   </div>
                 ))}
@@ -849,8 +847,7 @@ export default function DriverPanel() {
                 </div>
               )}
               <div style={{marginBottom:'1rem',fontSize:13,color:'#444'}}>
-                <b>Total:</b> {fmtMoney(selectedTransport.total)}
-                {selectedTransport.fecha_requerida && <span style={{marginLeft:12}}>📅 {new Date(selectedTransport.fecha_requerida).toLocaleDateString('es-MX')}</span>}
+                {selectedTransport.fecha_requerida && <span>📅 {new Date(selectedTransport.fecha_requerida).toLocaleDateString('es-MX')}</span>}
               </div>
               {TRANSPORT_TRANSITIONS[selectedTransport.status]?.map(t=>(
                 <button key={t.value}
