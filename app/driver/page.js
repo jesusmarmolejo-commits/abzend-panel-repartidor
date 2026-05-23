@@ -406,7 +406,7 @@ export default function DriverPanel() {
             {id:'entregas', label:'📦 Paquetería',     count:orders.length},
             {id:'viajes',   label:'🚛 Transporte',     count:transportOrders.length},
           ].map(tab=>(
-            <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
+            <button key={tab.id} onClick={()=>{ setActiveTab(tab.id); loadAll(createClient(), driverId) }}
               style={{padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,
                 color:activeTab===tab.id?'#0F6E56':'#666',
                 borderBottom:activeTab===tab.id?'2px solid #0F6E56':'2px solid transparent',
