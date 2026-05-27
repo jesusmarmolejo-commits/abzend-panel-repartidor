@@ -31,9 +31,22 @@ const STATUS_ICON = {
   cancelled: '❌'
 }
 
+/**
+ * HTML-encode special characters to prevent XSS in emails
+ */
+function htmlEscape(text) {
+  if (!text) return ''
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function buildEmailHtml({ tracking_code, status, dest_address, origin_address, note, event_code }) {
   const color = STATUS_COLOR[status] || '#0F6E56'
-  const label = STATUS_LABEL[status] || status
+  const label = htmlEscape(STATUS_LABEL[status] || status)
   const icon = STATUS_ICON[status] || '📦'
   const year = new Date().getFullYear()
 
@@ -61,8 +74,8 @@ function buildEmailHtml({ tracking_code, status, dest_address, origin_address, n
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr><td style="padding:8px 0;border-bottom:1px solid #E5E7EB;">
                   <span style="font-size:12px;color:#9CA3AF;display:block;margin-bottom:3px;">Número de guía</span>
-                  <span style="font-size:15px;font-weight:700;color:#111827;letter-spacing:1px;">${tracking_code}</span>
-                  ${event_code ? `<span style="margin-left:10px;background:#E1F5EE;color:#0F6E56;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;">[${event_code}]</span>` : ''}
+                  <span style="font-size:15px;font-weight:700;color:#111827;letter-spacing:1px;">${htmlEscape(tracking_code)}</span>
+                  ${event_code ? `<span style="margin-left:10px;background:#E1F5EE;color:#0F6E56;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;">[${htmlEscape(event_code)}]</span>` : ''}
                 </td></tr>
                 <tr><td style="padding:10px 0;border-bottom:1px solid #E5E7EB;">
                   <span style="font-size:12px;color:#9CA3AF;display:block;margin-bottom:3px;">Estado actual</span>
@@ -70,15 +83,15 @@ function buildEmailHtml({ tracking_code, status, dest_address, origin_address, n
                 </td></tr>
                 <tr><td style="padding:10px 0;border-bottom:1px solid #E5E7EB;">
                   <span style="font-size:12px;color:#9CA3AF;display:block;margin-bottom:3px;">Origen</span>
-                  <span style="font-size:13px;color:#374151;">${origin_address || '—'}</span>
+                  <span style="font-size:13px;color:#374151;">${htmlEscape(origin_address) || '—'}</span>
                 </td></tr>
                 <tr><td style="padding:10px 0;">
                   <span style="font-size:12px;color:#9CA3AF;display:block;margin-bottom:3px;">Destino</span>
-                  <span style="font-size:13px;color:#374151;">${dest_address || '—'}</span>
+                  <span style="font-size:13px;color:#374151;">${htmlEscape(dest_address) || '—'}</span>
                 </td></tr>
                 ${note ? `<tr><td style="padding:10px 0 0;border-top:1px solid #E5E7EB;">
                   <span style="font-size:12px;color:#9CA3AF;display:block;margin-bottom:3px;">Nota</span>
-                  <span style="font-size:13px;color:#374151;font-style:italic;">${note}</span>
+                  <span style="font-size:13px;color:#374151;font-style:italic;">${htmlEscape(note)}</span>
                 </td></tr>` : ''}
               </table>
             </td></tr>
@@ -104,37 +117,74 @@ function buildEmailHtml({ tracking_code, status, dest_address, origin_address, n
 </html>`
 }
 
+/**
+ * Verify webhook signature from Supabase
+ */
+async function verifyWebhookSignature(request, body, secret) {
+  try {
+    const signature = request.headers.get('x-supabase-signature')
+    if (!signature || !secret) return false
+
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+
+    const bodyText = typeof body === 'string' ? body : JSON.stringify(body)
+    const signatureBytes = await crypto.subtle.sign('HMAC', key, encoder.encode(bodyText))
+    const signatureHex = Array.from(new Uint8Array(signatureBytes))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    return signature === signatureHex
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message)
+    return false
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json()
-    console.log('Webhook payload:', JSON.stringify(body))
 
-    // Supabase webhook payload tiene { type, table, record, old_record }
+    // 🔒 1. VALIDAR AUTENTICACIÓN: webhook signature OR sesión autenticada
+    const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
+    const isWebhook = await verifyWebhookSignature(request, body, WEBHOOK_SECRET)
+
+    if (!isWebhook) {
+      // Si no es webhook válido, validar que hay sesión autenticada
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return NextResponse.json(
+          { error: 'Unauthorized: missing valid webhook signature or auth token' },
+          { status: 401 }
+        )
+      }
+
+      // En ambiente de Next.js, se podría extraer la sesión del token
+      // Por ahora, retornamos error si no es webhook
+      return NextResponse.json(
+        { error: 'Invalid request: use webhook signature or session auth' },
+        { status: 401 }
+      )
+    }
+
+    // Supabase webhook payload: { type, table, record, old_record }
     const record = body.record || body
-
     const order_id = record.order_id
     const status = record.status
     const status_code = record.status_code
     const note = record.note
 
-    if (!order_id) {
-      // Llamada directa desde el panel (no webhook)
-      const { to, tracking_code, dest_address, origin_address } = body
-      if (!to || !tracking_code) {
-        return NextResponse.json({ error: 'Faltan campos' }, { status: 400 })
-      }
-      const html = buildEmailHtml({ tracking_code, status, dest_address, origin_address, note, event_code: status_code })
-      const label = STATUS_LABEL[status] || status
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: 'ABZEND <onboarding@resend.dev>', to: [to], subject: `${STATUS_ICON[status] || '📦'} Tu envío — ${label}`, html })
-      })
-      const data = await res.json()
-      return NextResponse.json({ success: res.ok, id: data.id })
+    if (!order_id || !status) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Buscar la orden y el correo del cliente
+    // 2. OBTENER ORDEN Y EMAIL DEL CLIENTE (verificado desde BD)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -147,16 +197,17 @@ export async function POST(request) {
       .single()
 
     if (orderError || !order) {
-      console.error('Order not found:', orderError)
-      return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 })
+      console.error('Order not found')
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
     const clientEmail = order.client?.email
     if (!clientEmail) {
-      console.log('No client email found for order:', order_id)
-      return NextResponse.json({ skipped: true, reason: 'no email' })
+      console.log('No email for order')
+      return NextResponse.json({ skipped: true })
     }
 
+    // 3. CONSTRUIR EMAIL CON CONTENIDO ESCAPADO
     const html = buildEmailHtml({
       tracking_code: order.tracking_code,
       status,
@@ -167,23 +218,28 @@ export async function POST(request) {
     })
 
     const label = STATUS_LABEL[status] || status
+
+    // 4. ENVIAR EMAIL (dirección verificada desde BD, NO de request.body)
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        from: 'ABZEND <onboarding@resend.dev>',
-to: [clientEmail],
+        from: 'ABZEND <noreply@abzend.com>',
+        to: [clientEmail], // ✅ Verificado desde BD
         subject: `${STATUS_ICON[status] || '📦'} Tu envío ${order.tracking_code} — ${label}`,
         html
       })
     })
 
     const data = await res.json()
-    console.log('Email sent:', data)
-    return NextResponse.json({ success: res.ok, id: data.id, to: clientEmail })
+    return NextResponse.json({ success: res.ok, id: data.id })
 
-  } catch(e) {
-    console.error('Notify error:', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (e) {
+    // 🔒 NO logear full error (podría contener PII)
+    console.error('Notify error:', e.message)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
