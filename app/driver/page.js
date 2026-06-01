@@ -1,11 +1,11 @@
-'use client'
+﻿'use client'
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
 const STATUS_LABEL = { pending:'Pendiente', assigned:'Asignado', picked_up:'Recogido', in_transit:'En tránsito', delivered:'Entregado', intento_fallido:'Intento Fallido', regreso_a_cliente:'Regreso a Cliente', devuelto_a_remitente:'Devuelto a Remitente' }
-const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#E1F5EE', picked_up:'#E1F5EE', in_transit:'#E6F1FB', delivered:'#EAF3DE', intento_fallido:'#FEE2E2', regreso_a_cliente:'#FEE2E2', devuelto_a_remitente:'#F3F4F6' }
-const STATUS_TEXT  = { pending:'#854F0B', assigned:'#0F6E56', picked_up:'#0F6E56', in_transit:'#185FA5', delivered:'#3B6D11', intento_fallido:'#991B1B', regreso_a_cliente:'#991B1B', devuelto_a_remitente:'#374151' }
+const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#eef2ff', picked_up:'#eef2ff', in_transit:'#E6F1FB', delivered:'#EAF3DE', intento_fallido:'#FEE2E2', regreso_a_cliente:'#FEE2E2', devuelto_a_remitente:'#F3F4F6' }
+const STATUS_TEXT  = { pending:'#854F0B', assigned:'#4f46e5', picked_up:'#4f46e5', in_transit:'#185FA5', delivered:'#3B6D11', intento_fallido:'#991B1B', regreso_a_cliente:'#991B1B', devuelto_a_remitente:'#374151' }
 
 const REJECTION_REASONS = [
   { value:'CLIENTE_AUSENTE',     label:'Cliente Ausente' },
@@ -16,8 +16,8 @@ const REJECTION_REASONS = [
 ]
 
 const TRANSPORT_STATUS_LABEL = { pending:'Pendiente', confirmed:'Confirmado', in_transit:'En tránsito', delivered:'Entregado', cancelled:'Cancelado' }
-const TRANSPORT_STATUS_COLOR = { pending:'#FAEEDA', confirmed:'#E1F5EE', in_transit:'#E6F1FB', delivered:'#EAF3DE', cancelled:'#FEE2E2' }
-const TRANSPORT_STATUS_TEXT  = { pending:'#854F0B', confirmed:'#0F6E56', in_transit:'#185FA5', delivered:'#3B6D11', cancelled:'#991B1B' }
+const TRANSPORT_STATUS_COLOR = { pending:'#FAEEDA', confirmed:'#eef2ff', in_transit:'#E6F1FB', delivered:'#EAF3DE', cancelled:'#FEE2E2' }
+const TRANSPORT_STATUS_TEXT  = { pending:'#854F0B', confirmed:'#4f46e5', in_transit:'#185FA5', delivered:'#3B6D11', cancelled:'#991B1B' }
 const UNIDAD_LABEL = { '1.5ton':'1.5 Ton', '3.5ton':'3.5 Ton', 'rabon':'Rabón', 'torton':'Tórton' }
 
 const ALLOWED_TRANSITIONS = {
@@ -305,7 +305,7 @@ export default function DriverPanel() {
     if (!isDrawing.current) return; e.preventDefault()
     const canvas = canvasRef.current; const ctx = canvas.getContext('2d')
     const rect = canvas.getBoundingClientRect()
-    ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#0F6E56'
+    ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#4f46e5'
     ctx.lineTo((e.touches?.[0]?.clientX||e.clientX)-rect.left,(e.touches?.[0]?.clientY||e.clientY)-rect.top); ctx.stroke()
   }
   const stopDraw = () => {
@@ -378,9 +378,9 @@ export default function DriverPanel() {
   const logout = async () => { const supabase=createClient(); await supabase.auth.signOut(); router.push('/login') }
 
   if (loading) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0F6E56'}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#4f46e5'}}>
       <div style={{background:'#fff',borderRadius:16,padding:'2rem',textAlign:'center'}}>
-        <p style={{color:'#0F6E56',fontWeight:600}}>Cargando...</p>
+        <p style={{color:'#4f46e5',fontWeight:600}}>Cargando...</p>
       </div>
     </div>
   )
@@ -408,12 +408,12 @@ export default function DriverPanel() {
           ].map(tab=>(
             <button key={tab.id} onClick={()=>{ setActiveTab(tab.id); loadAll(createClient(), driverId) }}
               style={{padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,
-                color:activeTab===tab.id?'#0F6E56':'#666',
-                borderBottom:activeTab===tab.id?'2px solid #0F6E56':'2px solid transparent',
+                color:activeTab===tab.id?'#4f46e5':'#666',
+                borderBottom:activeTab===tab.id?'2px solid #4f46e5':'2px solid transparent',
                 fontWeight:activeTab===tab.id?600:400,display:'flex',alignItems:'center',gap:6}}>
               {tab.label}
               {tab.count > 0 && (
-                <span style={{background:'#0F6E56',color:'#fff',fontSize:10,padding:'1px 6px',borderRadius:20,fontWeight:700}}>
+                <span style={{background:'#4f46e5',color:'#fff',fontSize:10,padding:'1px 6px',borderRadius:20,fontWeight:700}}>
                   {tab.count}
                 </span>
               )}
@@ -433,7 +433,7 @@ export default function DriverPanel() {
             ) : (
               <div>
                 {/* Header de ruta */}
-                <div style={{background:'#0F6E56',borderRadius:10,padding:'1rem',marginBottom:'1rem',color:'#fff'}}>
+                <div style={{background:'#4f46e5',borderRadius:10,padding:'1rem',marginBottom:'1rem',color:'#fff'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
                     <div>
                       <div style={{fontSize:11,opacity:0.7,marginBottom:2}}>RUTA ACTIVA</div>
@@ -466,7 +466,7 @@ export default function DriverPanel() {
                       </button>
                     </div>
                     {routeQrMsg && (
-                      <p style={{fontSize:12,marginTop:6,color:routeQrMsg.startsWith('✅')?'#0F6E56':'#DC2626'}}>
+                      <p style={{fontSize:12,marginTop:6,color:routeQrMsg.startsWith('✅')?'#4f46e5':'#DC2626'}}>
                         {routeQrMsg}
                       </p>
                     )}
@@ -504,7 +504,7 @@ export default function DriverPanel() {
                       const isDelivered = order?.status === 'delivered'
                       return (
                         <div key={i} style={{...s.orderCard,
-                          borderLeft:`4px solid ${isDelivered?'#9CA3AF':item.item_type==='ltl'?'#185FA5':'#0F6E56'}`,
+                          borderLeft:`4px solid ${isDelivered?'#9CA3AF':item.item_type==='ltl'?'#185FA5':'#4f46e5'}`,
                           opacity:isDelivered?0.55:1}}>
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
                             <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -583,8 +583,8 @@ export default function DriverPanel() {
                 <div style={s.ordersList}>
                   {mixedItems.map(item => {
                     const isTransporte = item._tipo === 'transporte'
-                    const accentColor  = isTransporte ? '#185FA5' : '#0F6E56'
-                    const bgColor      = isTransporte ? '#EFF6FF' : '#E1F5EE'
+                    const accentColor  = isTransporte ? '#185FA5' : '#4f46e5'
+                    const bgColor      = isTransporte ? '#EFF6FF' : '#eef2ff'
 
                     return (
                       <div key={item.id} style={{...s.orderCard, borderLeft: `4px solid ${accentColor}`}}>
@@ -604,8 +604,8 @@ export default function DriverPanel() {
                                     {[...item.stops].sort((a,b)=>a.orden-b.orden).map((stop,i)=>(
                                       <span key={i} style={{display:'flex',alignItems:'center',gap:3}}>
                                         <span style={{fontSize:10,padding:'1px 6px',borderRadius:20,
-                                          background:stop.tipo==='carga'?'#E1F5EE':'#EFF6FF',
-                                          color:stop.tipo==='carga'?'#0F6E56':'#185FA5'}}>
+                                          background:stop.tipo==='carga'?'#eef2ff':'#EFF6FF',
+                                          color:stop.tipo==='carga'?'#4f46e5':'#185FA5'}}>
                                           {stop.tipo==='carga'?'📦':'📍'} {stop.alias||stop.calle?.substring(0,15)||'Parada'}
                                         </span>
                                         {i < item.stops.length-1 && <span style={{color:'#bbb',fontSize:10}}>→</span>}
@@ -744,8 +744,8 @@ export default function DriverPanel() {
                             {[...order.stops].sort((a,b)=>a.orden-b.orden).map((stop,i)=>(
                               <span key={i} style={{display:'flex',alignItems:'center',gap:3}}>
                                 <span style={{fontSize:10,padding:'1px 6px',borderRadius:20,
-                                  background:stop.tipo==='carga'?'#E1F5EE':'#EFF6FF',
-                                  color:stop.tipo==='carga'?'#0F6E56':'#185FA5'}}>
+                                  background:stop.tipo==='carga'?'#eef2ff':'#EFF6FF',
+                                  color:stop.tipo==='carga'?'#4f46e5':'#185FA5'}}>
                                   {stop.tipo==='carga'?'📦':'📍'} {stop.alias||stop.calle?.substring(0,15)||'Parada'}
                                 </span>
                                 {i < order.stops.length-1 && <span style={{color:'#bbb',fontSize:10}}>→</span>}
@@ -799,7 +799,7 @@ export default function DriverPanel() {
                     </select>
                   </div>
                   {selectedTransition==='delivered' && (
-                    <div style={{background:'#E1F5EE',borderRadius:8,padding:'10px 12px',marginBottom:'1rem',fontSize:13,color:'#0F6E56'}}>
+                    <div style={{background:'#eef2ff',borderRadius:8,padding:'10px 12px',marginBottom:'1rem',fontSize:13,color:'#4f46e5'}}>
                       📸 Se solicitará Prueba de Entrega (POD)
                     </div>
                   )}
@@ -839,7 +839,7 @@ export default function DriverPanel() {
                     <div key={i} style={{
                       fontSize:12,padding:'6px 10px',borderRadius:6,marginBottom:4,
                       background:stop.tipo==='carga'?'#F0FDF4':'#EFF6FF',
-                      color:stop.tipo==='carga'?'#0F6E56':'#185FA5'
+                      color:stop.tipo==='carga'?'#4f46e5':'#185FA5'
                     }}>
                       {stop.orden}. {stop.tipo==='carga'?'📦':'📍'} {stop.alias||'Parada'} — {stop.calle||'Sin dirección'}
                     </div>
@@ -939,7 +939,7 @@ export default function DriverPanel() {
                 <>
                   <div style={{textAlign:'center',marginBottom:'1rem'}}>
                     <div style={{fontSize:48}}>✅</div>
-                    <h3 style={{fontSize:18,fontWeight:700,color:'#0F6E56',margin:'8px 0 4px'}}>Orden finalizada con éxito</h3>
+                    <h3 style={{fontSize:18,fontWeight:700,color:'#4f46e5',margin:'8px 0 4px'}}>Orden finalizada con éxito</h3>
                     <p style={{fontSize:13,color:'#888'}}>#{podSummary.tracking_code}</p>
                   </div>
                   <div style={{background:'#F5F5F5',borderRadius:8,padding:'1rem',marginBottom:'1rem'}}>
@@ -1030,22 +1030,22 @@ export default function DriverPanel() {
 
 const s = {
   container: { minHeight:'100vh', background:'#f5f5f5', fontFamily:'sans-serif' },
-  topbar: { background:'#0F6E56', padding:'1rem 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
+  topbar: { background:'#4f46e5', padding:'1rem 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
   logo: { fontSize:20, fontWeight:700, color:'#fff', letterSpacing:2, display:'flex', alignItems:'center', gap:10 },
   tag: { background:'rgba(255,255,255,0.2)', fontSize:11, padding:'2px 8px', borderRadius:20, fontWeight:400, letterSpacing:0 },
   userRow: { display:'flex', alignItems:'center', gap:12 },
   userName: { color:'rgba(255,255,255,0.8)', fontSize:14 },
   logoutBtn: { padding:'6px 14px', background:'rgba(255,255,255,0.15)', color:'#fff', border:'1px solid rgba(255,255,255,0.3)', borderRadius:8, cursor:'pointer', fontSize:13 },
   main: { maxWidth:700, margin:'0 auto', padding:'1.5rem' },
-  msgBox: { background:'#E1F5EE', border:'1px solid #9FE1CB', borderRadius:8, padding:'10px 14px', color:'#0F6E56', marginBottom:'1rem', fontSize:14, cursor:'pointer' },
+  msgBox: { background:'#eef2ff', border:'1px solid #9FE1CB', borderRadius:8, padding:'10px 14px', color:'#4f46e5', marginBottom:'1rem', fontSize:14, cursor:'pointer' },
   card: { background:'#fff', border:'1px solid #eee', borderRadius:10, padding:'1rem', marginBottom:'1rem' },
   cardTitle: { fontSize:14, fontWeight:600, color:'#222', marginBottom:'0.75rem' },
   qrRow: { display:'flex', gap:8 },
   qrInput: { flex:1, padding:'9px 11px', border:'1px solid #ddd', borderRadius:8, fontSize:14, color:'#222' },
-  qrBtn: { padding:'9px 18px', background:'#0F6E56', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:500 },
+  qrBtn: { padding:'9px 18px', background:'#4f46e5', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:500 },
   sectionHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' },
   sectionTitle: { fontSize:15, fontWeight:600, color:'#222' },
-  count: { background:'#0F6E56', color:'#fff', fontSize:12, padding:'2px 10px', borderRadius:20 },
+  count: { background:'#4f46e5', color:'#fff', fontSize:12, padding:'2px 10px', borderRadius:20 },
   ordersList: { display:'flex', flexDirection:'column', gap:8 },
   orderCard: { background:'#fff', border:'1px solid #eee', borderRadius:10, padding:'1rem' },
   orderRow: { display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 },
@@ -1070,6 +1070,6 @@ const s = {
   input: { padding:'9px 11px', border:'1px solid #ddd', borderRadius:8, fontSize:14, color:'#222' },
   modalBtns: { display:'flex', gap:10, justifyContent:'flex-end' },
   cancelBtn: { padding:'8px 16px', background:'none', border:'1px solid #ddd', borderRadius:8, cursor:'pointer', fontSize:13 },
-  confirmBtn: { padding:'8px 18px', background:'#0F6E56', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
+  confirmBtn: { padding:'8px 18px', background:'#4f46e5', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
   noTransitions: { textAlign:'center', padding:'1rem' },
 }

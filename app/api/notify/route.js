@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const STATUS_LABEL = {
@@ -13,10 +13,10 @@ const STATUS_LABEL = {
 
 const STATUS_COLOR = {
   pending: '#F59E0B',
-  assigned: '#0F6E56',
-  picked_up: '#0F6E56',
+  assigned: '#4f46e5',
+  picked_up: '#4f46e5',
   in_transit: '#185FA5',
-  out_for_delivery: '#7C3AED',
+  out_for_delivery: '#4f46e5',
   delivered: '#10B981',
   cancelled: '#EF4444'
 }
@@ -45,7 +45,7 @@ function htmlEscape(text) {
 }
 
 function buildEmailHtml({ tracking_code, status, dest_address, origin_address, note, event_code }) {
-  const color = STATUS_COLOR[status] || '#0F6E56'
+  const color = STATUS_COLOR[status] || '#4f46e5'
   const label = htmlEscape(STATUS_LABEL[status] || status)
   const icon = STATUS_ICON[status] || '📦'
   const year = new Date().getFullYear()
@@ -57,7 +57,7 @@ function buildEmailHtml({ tracking_code, status, dest_address, origin_address, n
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F3F4F6;padding:32px 0;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
-        <tr><td style="background:#0F6E56;border-radius:12px 12px 0 0;padding:28px 36px;text-align:center;">
+        <tr><td style="background:#4f46e5;border-radius:12px 12px 0 0;padding:28px 36px;text-align:center;">
           <div style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:3px;">ABZEND</div>
           <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px;">Plataforma de envíos</div>
         </td></tr>
@@ -75,7 +75,7 @@ function buildEmailHtml({ tracking_code, status, dest_address, origin_address, n
                 <tr><td style="padding:8px 0;border-bottom:1px solid #E5E7EB;">
                   <span style="font-size:12px;color:#9CA3AF;display:block;margin-bottom:3px;">Número de guía</span>
                   <span style="font-size:15px;font-weight:700;color:#111827;letter-spacing:1px;">${htmlEscape(tracking_code)}</span>
-                  ${event_code ? `<span style="margin-left:10px;background:#E1F5EE;color:#0F6E56;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;">[${htmlEscape(event_code)}]</span>` : ''}
+                  ${event_code ? `<span style="margin-left:10px;background:#eef2ff;color:#4f46e5;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;">[${htmlEscape(event_code)}]</span>` : ''}
                 </td></tr>
                 <tr><td style="padding:10px 0;border-bottom:1px solid #E5E7EB;">
                   <span style="font-size:12px;color:#9CA3AF;display:block;margin-bottom:3px;">Estado actual</span>
@@ -100,7 +100,7 @@ function buildEmailHtml({ tracking_code, status, dest_address, origin_address, n
         <tr><td style="background:#ffffff;padding:0 36px 32px;text-align:center;">
           <p style="font-size:13px;color:#6B7280;margin:0 0 16px;">Puedes rastrear tu envío en tiempo real desde tu panel de cliente.</p>
           <a href="https://abzend-panel-cliente.vercel.app/dashboard"
-            style="display:inline-block;background:#0F6E56;color:#ffffff;font-size:14px;font-weight:700;padding:13px 32px;border-radius:8px;text-decoration:none;">
+            style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:14px;font-weight:700;padding:13px 32px;border-radius:8px;text-decoration:none;">
             Ver mi envío
           </a>
         </td></tr>

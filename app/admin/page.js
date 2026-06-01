@@ -1,11 +1,11 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
 // ── Helpers ──────────────────────────────────────────────
 const STATUS_LABEL = { pending:'Pendiente', assigned:'Asignado', picked_up:'Recogido', in_transit:'En tránsito', delivered:'Entregado', cancelled:'Cancelado' }
-const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#E1F5EE', picked_up:'#E1F5EE', in_transit:'#EFF6FF', delivered:'#DCFCE7', cancelled:'#FEE2E2' }
+const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#eef2ff', picked_up:'#eef2ff', in_transit:'#EFF6FF', delivered:'#DCFCE7', cancelled:'#FEE2E2' }
 const STATUS_TEXT  = { pending:'#92400E', assigned:'#065F46', picked_up:'#065F46', in_transit:'#1E40AF', delivered:'#166534', cancelled:'#991B1B' }
 const fmtDate = (d) => d ? new Date(d).toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'}) : '—'
 const fmtMoney = (n) => `$${Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2})}`
@@ -163,8 +163,8 @@ export default function AdminPanel() {
   const sinact = dark ? '#6B7280' : '#6B7280'
 
   if (loading) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0F6E56'}}>
-      <div style={{background:'#fff',borderRadius:16,padding:'2rem',textAlign:'center'}}><p style={{color:'#0F6E56',fontWeight:600}}>Cargando...</p></div>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#4f46e5'}}>
+      <div style={{background:'#fff',borderRadius:16,padding:'2rem',textAlign:'center'}}><p style={{color:'#4f46e5',fontWeight:600}}>Cargando...</p></div>
     </div>
   )
 
@@ -210,7 +210,7 @@ export default function AdminPanel() {
 
       {/* MAIN */}
       <div style={{flex:1,padding:'2rem',overflow:'auto'}}>
-        {msg && <div style={{position:'fixed',top:16,right:16,background:'#0F6E56',color:'#fff',padding:'10px 18px',borderRadius:8,fontSize:13,zIndex:300}}>{msg}</div>}
+        {msg && <div style={{position:'fixed',top:16,right:16,background:'#4f46e5',color:'#fff',padding:'10px 18px',borderRadius:8,fontSize:13,zIndex:300}}>{msg}</div>}
 
         {/* ── DASHBOARD ── */}
         {section==='dashboard' && (
@@ -297,7 +297,7 @@ export default function AdminPanel() {
                       </td>
                       <td style={{padding:'10px 6px'}}>
                         <div style={{display:'flex',gap:4}}>
-                          {o.status==='pending'&&<button onClick={()=>{setAssignOrder(o);setAssignDriver('')}} style={{padding:'4px 8px',background:'#0F6E56',color:'#fff',border:'none',borderRadius:5,cursor:'pointer',fontSize:11}}>Asignar</button>}
+                          {o.status==='pending'&&<button onClick={()=>{setAssignOrder(o);setAssignDriver('')}} style={{padding:'4px 8px',background:'#4f46e5',color:'#fff',border:'none',borderRadius:5,cursor:'pointer',fontSize:11}}>Asignar</button>}
                           <button onClick={()=>{setStatusOrder(o);setNewStatus(o.status);setStatusCode('')}} style={{padding:'4px 8px',background:'#185FA5',color:'#fff',border:'none',borderRadius:5,cursor:'pointer',fontSize:11}}>Estado</button>
                         </div>
                       </td>
@@ -342,9 +342,9 @@ export default function AdminPanel() {
                   <div>
                     <div style={{fontWeight:600,marginBottom:'1rem'}}>Resultado de Cotización</div>
                     {[
-                      {label:'Estándar (3-5 días)', value:quoteResult.standard, color:'#0F6E56'},
+                      {label:'Estándar (3-5 días)', value:quoteResult.standard, color:'#4f46e5'},
                       {label:'Express (1-2 días)', value:quoteResult.express, color:'#185FA5'},
-                      {label:'Mismo día', value:quoteResult.same_day, color:'#7C3AED'},
+                      {label:'Mismo día', value:quoteResult.same_day, color:'#4f46e5'},
                     ].map((r,i)=>(
                       <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:`1px solid ${bdr}`}}>
                         <span style={{fontSize:13,color:sub}}>{r.label}</span>
@@ -465,7 +465,7 @@ export default function AdminPanel() {
                       <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
                         <span style={{fontSize:10,color:sub}}>{rev>0?fmtMoney(rev):''}</span>
                         <div style={{width:'100%',background:dark?'#374151':'#E5E7EB',borderRadius:'4px 4px 0 0',height:140,display:'flex',alignItems:'flex-end'}}>
-                          <div style={{width:'100%',background:'#0F6E56',borderRadius:'4px 4px 0 0',height:`${Math.max((rev/maxRev)*100,rev>0?4:0)}%`,transition:'height .3s'}}/>
+                          <div style={{width:'100%',background:'#4f46e5',borderRadius:'4px 4px 0 0',height:`${Math.max((rev/maxRev)*100,rev>0?4:0)}%`,transition:'height .3s'}}/>
                         </div>
                         <span style={{fontSize:10,color:sub}}>{d.label}</span>
                       </div>
@@ -516,7 +516,7 @@ export default function AdminPanel() {
               </div>
               <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
                 <button onClick={()=>setAssignOrder(null)} style={{padding:'8px 16px',border:`1px solid ${bdr}`,borderRadius:8,background:'none',cursor:'pointer',color:text,fontSize:13}}>Cancelar</button>
-                <button onClick={doAssign} disabled={processing} style={{padding:'8px 18px',background:'#0F6E56',color:'#fff',border:'none',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,opacity:processing?.6:1}}>
+                <button onClick={doAssign} disabled={processing} style={{padding:'8px 18px',background:'#4f46e5',color:'#fff',border:'none',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,opacity:processing?.6:1}}>
                   {processing?'Asignando...':'Confirmar'}
                 </button>
               </div>
@@ -584,7 +584,7 @@ function TrackingMap({ drivers, dark }) {
       active.forEach((d, i) => {
         const [lat, lng] = baseCoords[i % baseCoords.length]
         const icon = L.divIcon({
-          html: `<div style="background:#0F6E56;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;white-space:nowrap;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🚚 ${d.user?.full_name?.split(' ')[0]||'Driver'}</div>`,
+          html: `<div style="background:#4f46e5;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;white-space:nowrap;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🚚 ${d.user?.full_name?.split(' ')[0]||'Driver'}</div>`,
           className: '', iconAnchor: [40, 12]
         })
         L.marker([lat + (Math.random()-0.5)*0.02, lng + (Math.random()-0.5)*0.02], { icon }).addTo(map)
@@ -604,7 +604,7 @@ function DonutChart({ orders, dark, sub }) {
   const total = orders.length || 1
   const slices = Object.entries(counts).map(([status, count]) => ({
     status, count, pct: count/total,
-    color: {pending:'#F59E0B',assigned:'#0F6E56',picked_up:'#1D9E75',in_transit:'#185FA5',delivered:'#10B981',cancelled:'#EF4444'}[status]||'#9CA3AF',
+    color: {pending:'#F59E0B',assigned:'#4f46e5',picked_up:'#1D9E75',in_transit:'#185FA5',delivered:'#10B981',cancelled:'#EF4444'}[status]||'#9CA3AF',
     label: {pending:'Pendiente',assigned:'Asignado',picked_up:'Recogido',in_transit:'En tránsito',delivered:'Completado',cancelled:'Cancelado'}[status]||status
   }))
 

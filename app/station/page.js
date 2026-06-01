@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation'
 const STATION_CODES = ['RSC','SRT','CNT','SEA','DPO','INT','ATH','DTH','DTS','AEC','HEC','REC','IXT','ADC','HIC','CPI','DPP','RIC','RLC','LSR','ASC','LDV','STO','RLB','OFD','PLS','AWD','E-01','E-02','E-03','E-04','E-05','E-06','E-07','E-08','E-09','E-10','RTO','CAN','EXP']
 
 const STATUS_LABEL = { pending:'Pendiente', assigned:'Asignado', picked_up:'Recogido', in_transit:'En tránsito', delivered:'Entregado', cancelled:'Cancelado' }
-const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#E1F5EE', picked_up:'#E1F5EE', in_transit:'#E6F1FB', delivered:'#EAF3DE', cancelled:'#FCEBEB' }
-const STATUS_TEXT = { pending:'#854F0B', assigned:'#0F6E56', picked_up:'#0F6E56', in_transit:'#185FA5', delivered:'#3B6D11', cancelled:'#A32D2D' }
+const STATUS_COLOR = { pending:'#FAEEDA', assigned:'#eef2ff', picked_up:'#eef2ff', in_transit:'#E6F1FB', delivered:'#EAF3DE', cancelled:'#FCEBEB' }
+const STATUS_TEXT = { pending:'#854F0B', assigned:'#4f46e5', picked_up:'#4f46e5', in_transit:'#185FA5', delivered:'#3B6D11', cancelled:'#A32D2D' }
 
 const fmtDate = (d) => d ? new Date(d).toLocaleString('es-MX', { dateStyle:'short', timeStyle:'short' }) : ''
 
@@ -116,9 +116,9 @@ export default function StationPanel() {
   }
 
   if (loading) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0F6E56'}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#4f46e5'}}>
       <div style={{background:'#fff',borderRadius:16,padding:'2rem',textAlign:'center'}}>
-        <p style={{color:'#0F6E56',fontWeight:600}}>Cargando...</p>
+        <p style={{color:'#4f46e5',fontWeight:600}}>Cargando...</p>
       </div>
     </div>
   )
@@ -239,22 +239,22 @@ export default function StationPanel() {
 
 const s = {
   container: { minHeight:'100vh', background:'#f5f5f5', fontFamily:'sans-serif' },
-  topbar: { background:'#085041', padding:'1rem 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
+  topbar: { background:'#4338ca', padding:'1rem 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
   logo: { fontSize:20, fontWeight:700, color:'#fff', letterSpacing:2, display:'flex', alignItems:'center', gap:10 },
   tag: { background:'rgba(255,255,255,0.2)', fontSize:11, padding:'2px 8px', borderRadius:20, fontWeight:400, letterSpacing:0 },
   userRow: { display:'flex', alignItems:'center', gap:12 },
   userName: { color:'rgba(255,255,255,0.8)', fontSize:14 },
   logoutBtn: { padding:'6px 14px', background:'rgba(255,255,255,0.15)', color:'#fff', border:'1px solid rgba(255,255,255,0.3)', borderRadius:8, cursor:'pointer', fontSize:13 },
   main: { maxWidth:700, margin:'0 auto', padding:'1.5rem' },
-  msgBox: { background:'#E1F5EE', border:'1px solid #9FE1CB', borderRadius:8, padding:'10px 14px', color:'#0F6E56', marginBottom:'1rem', fontSize:14, cursor:'pointer' },
+  msgBox: { background:'#eef2ff', border:'1px solid #9FE1CB', borderRadius:8, padding:'10px 14px', color:'#4f46e5', marginBottom:'1rem', fontSize:14, cursor:'pointer' },
   card: { background:'#fff', border:'1px solid #eee', borderRadius:10, padding:'1rem', marginBottom:'1rem' },
   cardTitle: { fontSize:14, fontWeight:600, color:'#222', marginBottom:'0.75rem' },
   qrRow: { display:'flex', gap:8 },
   qrInput: { flex:1, padding:'9px 11px', border:'1px solid #ddd', borderRadius:8, fontSize:14, color:'#222' },
-  qrBtn: { padding:'9px 18px', background:'#085041', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:500 },
+  qrBtn: { padding:'9px 18px', background:'#4338ca', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:500 },
   sectionHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' },
   sectionTitle: { fontSize:15, fontWeight:600, color:'#222' },
-  count: { background:'#085041', color:'#fff', fontSize:12, padding:'2px 10px', borderRadius:20 },
+  count: { background:'#4338ca', color:'#fff', fontSize:12, padding:'2px 10px', borderRadius:20 },
   ordersList: { display:'flex', flexDirection:'column', gap:8 },
   orderCard: { background:'#fff', border:'1px solid #eee', borderRadius:10, padding:'1rem', cursor:'pointer' },
   orderRow: { display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 },
@@ -264,7 +264,7 @@ const s = {
   orderMeta: { fontSize:11, color:'#bbb' },
   orderRight: { display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 },
   badge: { fontSize:11, padding:'3px 10px', borderRadius:20, fontWeight:500, whiteSpace:'nowrap' },
-  lastEvent: { fontSize:11, color:'#085041', fontWeight:600 },
+  lastEvent: { fontSize:11, color:'#4338ca', fontWeight:600 },
   empty: { textAlign:'center', padding:'2rem', background:'#fff', borderRadius:10, border:'1px solid #eee' },
   emptyText: { color:'#aaa', fontSize:13 },
   modalOverlay: { position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 },
@@ -275,12 +275,12 @@ const s = {
   eventsBox: { background:'#f9f9f9', borderRadius:8, padding:'0.75rem', marginBottom:'1rem' },
   eventsTitle: { fontSize:12, color:'#888', marginBottom:6 },
   eventRow: { display:'flex', justifyContent:'space-between', fontSize:12, padding:'2px 0' },
-  eventCode: { fontWeight:600, color:'#085041' },
+  eventCode: { fontWeight:600, color:'#4338ca' },
   eventDate: { color:'#aaa' },
   field: { display:'flex', flexDirection:'column', gap:5, marginBottom:'1rem' },
   label: { fontSize:13, color:'#666' },
   input: { padding:'9px 11px', border:'1px solid #ddd', borderRadius:8, fontSize:14, color:'#222' },
   modalBtns: { display:'flex', gap:10, justifyContent:'flex-end' },
   cancelBtn: { padding:'8px 16px', background:'none', border:'1px solid #ddd', borderRadius:8, cursor:'pointer', fontSize:13 },
-  confirmBtn: { padding:'8px 18px', background:'#085041', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
+  confirmBtn: { padding:'8px 18px', background:'#4338ca', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
 }

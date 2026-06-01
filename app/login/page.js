@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { createClient } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -62,7 +62,7 @@ export default function Login() {
               <div style={{flex:1,height:1,background:'#eee'}}/>
             </div>
             <button onClick={()=>setMode('email')}
-              style={{...styles.btn,background:'#0F6E56',color:'#fff',border:'none'}}>
+              style={{...styles.btn,background:'#4f46e5',color:'#fff',border:'none'}}>
               Ingresar con email y contrasena
             </button>
           </>
@@ -79,12 +79,12 @@ export default function Login() {
                 style={styles.input}
                 onKeyDown={e=>e.key==='Enter'&&loginEmail()} />
             </div>
-            <button style={{...styles.btn,background:'#0F6E56',color:'#fff',border:'none'}}
+            <button style={{...styles.btn,background:'#4f46e5',color:'#fff',border:'none'}}
               onClick={loginEmail} disabled={loading}>
               {loading ? 'Ingresando...' : 'Ingresar'}
             </button>
             <button onClick={()=>{setMode('google');setError('')}}
-              style={{background:'none',border:'none',color:'#0F6E56',fontSize:13,cursor:'pointer',marginTop:12}}>
+              style={{background:'none',border:'none',color:'#4f46e5',fontSize:13,cursor:'pointer',marginTop:12}}>
               Volver
             </button>
           </>
@@ -96,9 +96,9 @@ export default function Login() {
 }
 
 const styles = {
-  container: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#0F6E56' },
+  container: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#4f46e5' },
   box: { background:'#fff', borderRadius:16, padding:'2rem', width:'100%', maxWidth:380, textAlign:'center' },
-  logo: { fontSize:28, fontWeight:700, color:'#0F6E56', letterSpacing:2, marginBottom:4 },
+  logo: { fontSize:28, fontWeight:700, color:'#4f46e5', letterSpacing:2, marginBottom:4 },
   sub: { fontSize:13, color:'#888', marginBottom:'1.5rem' },
   error: { background:'#FCEBEB', color:'#A32D2D', borderRadius:8, padding:'10px 12px', fontSize:13, marginBottom:'1rem' },
   btn: { display:'flex', alignItems:'center', justifyContent:'center', width:'100%', padding:12, background:'#fff', color:'#333', border:'1px solid #ddd', borderRadius:8, fontSize:15, fontWeight:500, cursor:'pointer', marginBottom:4 },

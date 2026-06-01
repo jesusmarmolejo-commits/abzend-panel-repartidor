@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect } from 'react'
 import { createClient } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -38,9 +38,9 @@ export default function Callback() {
   }, [])
 
   return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0F6E56'}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#4f46e5'}}>
       <div style={{background:'#fff',borderRadius:16,padding:'2rem',textAlign:'center'}}>
-        <p style={{color:'#0F6E56',fontWeight:700,fontSize:20,letterSpacing:2}}>ABZEND</p>
+        <p style={{color:'#4f46e5',fontWeight:700,fontSize:20,letterSpacing:2}}>ABZEND</p>
         <p style={{color:'#888',marginTop:8}}>Verificando acceso...</p>
       </div>
     </div>

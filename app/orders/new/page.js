@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -131,7 +131,7 @@ export default function NewOrder() {
     const points = []
 
     if (form.origin_lat && form.origin_lng) {
-      const icon = L.divIcon({ html: '<div style="background:#0F6E56;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📦 Origen</div>', className: '', iconAnchor: [30, 12] })
+      const icon = L.divIcon({ html: '<div style="background:#4f46e5;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📦 Origen</div>', className: '', iconAnchor: [30, 12] })
       const m = L.marker([form.origin_lat, form.origin_lng], { icon }).addTo(map)
       markersRef.current.push(m)
       points.push([form.origin_lat, form.origin_lng])
@@ -146,7 +146,7 @@ export default function NewOrder() {
 
     if (points.length === 2) {
       // Línea entre origen y destino
-      const line = L.polyline(points, { color: '#0F6E56', weight: 3, dashArray: '8 6', opacity: 0.7 }).addTo(map)
+      const line = L.polyline(points, { color: '#4f46e5', weight: 3, dashArray: '8 6', opacity: 0.7 }).addTo(map)
       markersRef.current.push(line)
       map.fitBounds(points, { padding: [40, 40] })
     } else if (points.length === 1) {
@@ -305,8 +305,8 @@ const s = {
   page: { minHeight:'100vh', background:'#f5f5f5', fontFamily:'sans-serif' },
   container: { maxWidth:1100, margin:'0 auto', padding:'1.5rem' },
   header: { display:'flex', alignItems:'center', gap:12, marginBottom:'1.5rem' },
-  back: { background:'none', border:'none', color:'#0F6E56', cursor:'pointer', fontSize:14 },
-  title: { fontSize:22, fontWeight:700, color:'#0F6E56' },
+  back: { background:'none', border:'none', color:'#4f46e5', cursor:'pointer', fontSize:14 },
+  title: { fontSize:22, fontWeight:700, color:'#4f46e5' },
   error: { background:'#FCEBEB', color:'#A32D2D', borderRadius:8, padding:'10px 14px', marginBottom:'1rem', fontSize:14 },
   grid2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, alignItems:'start' },
   card: { background:'#fff', border:'1px solid #e5e5e5', borderRadius:12, padding:'1.25rem', marginBottom:'1rem' },
@@ -319,7 +319,7 @@ const s = {
   dropdownItem: { padding:'9px 12px', cursor:'pointer', fontSize:13, color:'#333', borderBottom:'1px solid #f0f0f0', background:'#fff' },
   summary: { background:'#f9f9f9', border:'1px solid #e5e5e5', borderRadius:12, padding:'1rem', marginBottom:'1rem' },
   summaryRow: { display:'flex', justifyContent:'space-between', fontSize:14, padding:'5px 0', borderBottom:'1px solid #eee' },
-  btn: { width:'100%', padding:14, background:'#0F6E56', color:'#fff', border:'none', borderRadius:10, fontSize:16, fontWeight:600, cursor:'pointer' },
+  btn: { width:'100%', padding:14, background:'#4f46e5', color:'#fff', border:'none', borderRadius:10, fontSize:16, fontWeight:600, cursor:'pointer' },
   mapCol: { position:'sticky', top:24 },
   mapCard: { background:'#fff', border:'1px solid #e5e5e5', borderRadius:12, padding:'1.25rem' },
 }
