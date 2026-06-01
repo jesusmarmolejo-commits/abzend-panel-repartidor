@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Script from 'next/script';
@@ -25,7 +25,7 @@ export default function DemoBanner() {
     <>
       <div style={{
         position: 'sticky', top: 0, zIndex: 9999,
-        background: 'linear-gradient(90deg,#0f1117,#1a1d24)',
+        background: 'linear-gradient(90deg,00f1117,01a1d24)',
         borderBottom: '1px solid rgba(249,115,22,0.35)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '7px 16px', gap: '10px', flexWrap: 'wrap',
@@ -33,8 +33,8 @@ export default function DemoBanner() {
         fontSize: '12px',
       }}>
         {/* Izquierda */}
-        <span style={{ color: '#f97316', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <span style={{ display:'inline-block',width:7,height:7,borderRadius:'50%',background:'#f97316' }} />
+        <span style={{ color: '0f97316', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <span style={{ display:'inline-block',width:7,height:7,borderRadius:'50%',background:'0f97316' }} />
           🧪 Demo — datos se resetean cada lunes
         </span>
 
@@ -48,13 +48,13 @@ export default function DemoBanner() {
                 background: copied===role ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.06)',
                 border: `1px solid ${copied===role ? 'rgba(34,197,94,.4)' : 'rgba(255,255,255,.1)'}`,
                 borderRadius: 6, padding: '3px 9px', cursor: 'pointer',
-                color: copied===role ? '#4ade80' : '#f1f5f9',
+                color: copied===role ? '04ade80' : '0f1f5f9',
                 display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
               }}>
               {copied===role ? '✓ Copiado' : (
                 <>
-                  <span style={{ fontSize:10, color:'#f97316', fontWeight:700, textTransform:'capitalize' }}>{emoji} {role}</span>
-                  <span style={{ fontSize:11, color:'#94a3b8' }}>{email}</span>
+                  <span style={{ fontSize:10, color:'0f97316', fontWeight:700, textTransform:'capitalize' }}>{emoji} {role}</span>
+                  <span style={{ fontSize:11, color:'094a3b8' }}>{email}</span>
                 </>
               )}
             </button>
@@ -65,10 +65,10 @@ export default function DemoBanner() {
         <div style={{ display:'flex', gap:8, flexShrink:0 }}>
           <a href="?tour=1" style={{
             background:'rgba(249,115,22,.12)', border:'1px solid rgba(249,115,22,.3)',
-            color:'#f97316', padding:'4px 10px', borderRadius:6, fontSize:12, fontWeight:700, textDecoration:'none'
+            color:'0f97316', padding:'4px 10px', borderRadius:6, fontSize:12, fontWeight:700, textDecoration:'none'
           }}>🎯 Tour</a>
           <a href="mailto:jesusmarmolejo@gmail.com?subject=Interés en ABZEND" style={{
-            background:'#f97316', color:'#fff', padding:'4px 12px',
+            background:'0f97316', color:'0fff', padding:'4px 12px',
             borderRadius:6, fontSize:12, fontWeight:700, textDecoration:'none'
           }}>Contactar →</a>
         </div>

@@ -149,7 +149,7 @@ export default function EvidenceCapture({
         context.lineCap = 'round'
         context.lineJoin = 'round'
         context.lineWidth = 3
-        context.strokeStyle = '#000'
+        context.strokeStyle = '0000'
         signatureContextRef.current = context
       }
     }
@@ -548,14 +548,14 @@ export default function EvidenceCapture({
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)',
+    background: 'linear-gradient(135deg, 0f5f5f5 0%, 0e8e8e8 100%)',
     padding: '20px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
   },
   card: {
-    background: '#fff',
+    background: '0fff',
     borderRadius: 12,
     padding: '24px',
     maxWidth: 600,
@@ -566,7 +566,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 24,
     fontWeight: 700,
     marginBottom: 24,
-    color: '#222',
+    color: '0222',
     textAlign: 'center'
   },
   step: {
@@ -577,26 +577,26 @@ const styles: Record<string, React.CSSProperties> = {
   stepTitle: {
     fontSize: 18,
     fontWeight: 600,
-    color: '#333'
+    color: '0333'
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '0666',
     margin: 0
   },
   video: {
     width: '100%',
     borderRadius: 8,
-    background: '#000',
+    background: '0000',
     aspectRatio: '4/3',
     objectFit: 'cover'
   },
   signatureCanvas: {
     width: '100%',
     height: 250,
-    border: '2px solid #ddd',
+    border: '2px solid 0ddd',
     borderRadius: 8,
-    background: '#fff',
+    background: '0fff',
     cursor: 'crosshair',
     touchAction: 'none'
   },
@@ -614,7 +614,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   textarea: {
     padding: 12,
-    border: '1px solid #ddd',
+    border: '1px solid 0ddd',
     borderRadius: 8,
     fontSize: 14,
     fontFamily: 'inherit',
@@ -630,8 +630,8 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     minWidth: 120,
     padding: '12px 16px',
-    background: '#4f46e5',
-    color: '#fff',
+    background: '04f46e5',
+    color: '0fff',
     border: 'none',
     borderRadius: 8,
     fontSize: 14,
@@ -643,9 +643,9 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     minWidth: 120,
     padding: '12px 16px',
-    background: '#f0f0f0',
-    color: '#333',
-    border: '1px solid #ddd',
+    background: '0f0f0f0',
+    color: '0333',
+    border: '1px solid 0ddd',
     borderRadius: 8,
     fontSize: 14,
     fontWeight: 600,
@@ -655,8 +655,8 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     minWidth: 120,
     padding: '12px 16px',
-    background: '#EF4444',
-    color: '#fff',
+    background: '0EF4444',
+    color: '0fff',
     border: 'none',
     borderRadius: 8,
     fontSize: 14,
@@ -666,8 +666,8 @@ const styles: Record<string, React.CSSProperties> = {
   continueButton: {
     marginTop: 12,
     padding: '8px 12px',
-    background: '#4f46e5',
-    color: '#fff',
+    background: '04f46e5',
+    color: '0fff',
     border: 'none',
     borderRadius: 6,
     fontSize: 13,
@@ -677,36 +677,36 @@ const styles: Record<string, React.CSSProperties> = {
   resetButton: {
     marginTop: 24,
     padding: '10px',
-    background: '#f5f5f5',
-    border: '1px solid #ddd',
+    background: '0f5f5f5',
+    border: '1px solid 0ddd',
     borderRadius: 6,
     fontSize: 12,
-    color: '#666',
+    color: '0666',
     cursor: 'pointer',
     width: '100%'
   },
   smallLink: {
     background: 'none',
     border: 'none',
-    color: '#4f46e5',
+    color: '04f46e5',
     cursor: 'pointer',
     fontSize: 12,
     marginLeft: 4,
     textDecoration: 'underline'
   },
   error: {
-    background: '#FCEBEB',
-    color: '#A32D2D',
+    background: '0FCEBEB',
+    color: '0A32D2D',
     padding: '12px',
     borderRadius: 8,
     marginBottom: 16,
     fontSize: 13,
-    borderLeft: '4px solid #A32D2D'
+    borderLeft: '4px solid 0A32D2D'
   },
   infoBox: {
-    background: '#ECFDF5',
-    border: '1px solid #86EFAC',
-    color: '#166534',
+    background: '0ECFDF5',
+    border: '1px solid 086EFAC',
+    color: '0166534',
     padding: '12px',
     borderRadius: 8,
     fontSize: 13,
@@ -715,8 +715,8 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between'
   },
   reviewBox: {
-    background: '#f9f9f9',
-    border: '1px solid #e0e0e0',
+    background: '0f9f9f9',
+    border: '1px solid 0e0e0e0',
     borderRadius: 8,
     padding: 16,
     display: 'flex',
@@ -726,7 +726,7 @@ const styles: Record<string, React.CSSProperties> = {
   reviewItem: {
     fontSize: 13,
     lineHeight: 1.6,
-    color: '#333'
+    color: '0333'
   },
   loadingBox: {
     textAlign: 'center',
@@ -739,8 +739,8 @@ const styles: Record<string, React.CSSProperties> = {
   spinner: {
     width: 40,
     height: 40,
-    border: '4px solid #f0f0f0',
-    borderTop: '4px solid #4f46e5',
+    border: '4px solid 0f0f0f0',
+    borderTop: '4px solid 04f46e5',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite'
   }

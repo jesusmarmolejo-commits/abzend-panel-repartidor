@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ABZEND — Demo Tour Component
  * ─────────────────────────────────────────────────────────────────
  * Tour guiado paso a paso para clientes potenciales.
@@ -177,8 +177,8 @@
     }
     .abzend-tour-bubble {
       position: fixed; z-index: 99992;
-      background: #111318; color: #f1f5f9;
-      border: 1px solid #1e2330; border-radius: 16px;
+      background: 0111318; color: 0f1f5f9;
+      border: 1px solid 01e2330; border-radius: 16px;
       padding: 1.5rem; max-width: 340px; min-width: 280px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
       animation: abzendSlideIn .3s ease;
@@ -198,13 +198,13 @@
     .abzend-tour-close {
       width: 28px; height: 28px; border-radius: 50%;
       background: rgba(255,255,255,0.07); border: none;
-      color: #94a3b8; font-size: 1rem; cursor: pointer;
+      color: 094a3b8; font-size: 1rem; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: background .2s;
     }
     .abzend-tour-close:hover { background: rgba(255,255,255,0.15); }
     .abzend-tour-content {
-      font-size: .875rem; color: #94a3b8; line-height: 1.65; margin-bottom: 1.25rem;
+      font-size: .875rem; color: 094a3b8; line-height: 1.65; margin-bottom: 1.25rem;
     }
     .abzend-tour-footer {
       display: flex; align-items: center; justify-content: space-between; gap: .75rem;
@@ -216,7 +216,7 @@
       width: 6px; height: 6px; border-radius: 50%;
       background: rgba(255,255,255,0.15); transition: background .2s;
     }
-    .abzend-tour-dot.active { background: #f97316; width: 18px; border-radius: 3px; }
+    .abzend-tour-dot.active { background: 0f97316; width: 18px; border-radius: 3px; }
     .abzend-tour-dot.done { background: rgba(249,115,22,0.4); }
     .abzend-tour-btns { display: flex; gap: .5rem; }
     .abzend-tour-btn {
@@ -224,24 +224,24 @@
       cursor: pointer; border: none; transition: all .15s;
     }
     .abzend-tour-btn-secondary {
-      background: rgba(255,255,255,0.07); color: #94a3b8;
+      background: rgba(255,255,255,0.07); color: 094a3b8;
     }
     .abzend-tour-btn-secondary:hover { background: rgba(255,255,255,0.12); }
     .abzend-tour-btn-primary {
-      background: #f97316; color: #fff;
+      background: 0f97316; color: 0fff;
     }
-    .abzend-tour-btn-primary:hover { background: #fb923c; }
+    .abzend-tour-btn-primary:hover { background: 0fb923c; }
     .abzend-tour-cta {
       display: block; width: 100%; text-align: center;
-      background: linear-gradient(135deg,#f97316,#fbbf24); color: #fff;
+      background: linear-gradient(135deg,0f97316,0fbbf24); color: 0fff;
       padding: .6rem 1rem; border-radius: 8px; font-size: .85rem; font-weight: 700;
       text-decoration: none; margin-top: .5rem; transition: opacity .2s;
     }
     .abzend-tour-cta:hover { opacity: .9; }
     .abzend-tour-badge {
       position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 99980;
-      background: #111318; border: 1px solid rgba(249,115,22,.4);
-      color: #f97316; padding: .6rem 1.1rem; border-radius: 999px;
+      background: 0111318; border: 1px solid rgba(249,115,22,.4);
+      color: 0f97316; padding: .6rem 1.1rem; border-radius: 999px;
       font-size: .8rem; font-weight: 700; cursor: pointer;
       box-shadow: 0 4px 20px rgba(0,0,0,.4);
       display: flex; align-items: center; gap: .4rem;

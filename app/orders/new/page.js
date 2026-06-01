@@ -69,8 +69,8 @@ function AddressInput({ label, value, onChange, onSelect, placeholder }) {
         <div style={s.dropdown}>
           {results.map((r, i) => (
             <div key={i} onClick={() => handleSelect(r)} style={s.dropdownItem}
-              onMouseEnter={e => e.target.style.background = '#F3F4F6'}
-              onMouseLeave={e => e.target.style.background = '#fff'}>
+              onMouseEnter={e => e.target.style.background = '0F3F4F6'}
+              onMouseLeave={e => e.target.style.background = '0fff'}>
               📍 {r.label}
             </div>
           ))}
@@ -131,14 +131,14 @@ export default function NewOrder() {
     const points = []
 
     if (form.origin_lat && form.origin_lng) {
-      const icon = L.divIcon({ html: '<div style="background:#4f46e5;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📦 Origen</div>', className: '', iconAnchor: [30, 12] })
+      const icon = L.divIcon({ html: '<div style="background:04f46e5;color:0fff;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📦 Origen</div>', className: '', iconAnchor: [30, 12] })
       const m = L.marker([form.origin_lat, form.origin_lng], { icon }).addTo(map)
       markersRef.current.push(m)
       points.push([form.origin_lat, form.origin_lng])
     }
 
     if (form.dest_lat && form.dest_lng) {
-      const icon = L.divIcon({ html: '<div style="background:#185FA5;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🏠 Destino</div>', className: '', iconAnchor: [35, 12] })
+      const icon = L.divIcon({ html: '<div style="background:0185FA5;color:0fff;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🏠 Destino</div>', className: '', iconAnchor: [35, 12] })
       const m = L.marker([form.dest_lat, form.dest_lng], { icon }).addTo(map)
       markersRef.current.push(m)
       points.push([form.dest_lat, form.dest_lng])
@@ -146,7 +146,7 @@ export default function NewOrder() {
 
     if (points.length === 2) {
       // Línea entre origen y destino
-      const line = L.polyline(points, { color: '#4f46e5', weight: 3, dashArray: '8 6', opacity: 0.7 }).addTo(map)
+      const line = L.polyline(points, { color: '04f46e5', weight: 3, dashArray: '8 6', opacity: 0.7 }).addTo(map)
       markersRef.current.push(line)
       map.fitBounds(points, { padding: [40, 40] })
     } else if (points.length === 1) {
@@ -284,15 +284,15 @@ export default function NewOrder() {
           {/* Columna derecha — mapa */}
           <div style={s.mapCol}>
             <div style={s.mapCard}>
-              <div style={{fontWeight:600,fontSize:14,marginBottom:8,color:'#222'}}>
+              <div style={{fontWeight:600,fontSize:14,marginBottom:8,color:'0222'}}>
                 Vista previa del recorrido
               </div>
-              <div style={{fontSize:12,color:'#888',marginBottom:12}}>
+              <div style={{fontSize:12,color:'0888',marginBottom:12}}>
                 {form.origin_lat && form.dest_lat ? '📍 Origen y destino marcados en el mapa' :
                  form.origin_lat ? '📦 Origen marcado — agrega el destino' :
                  'Busca las direcciones para visualizarlas en el mapa'}
               </div>
-              <div id="new-order-map" style={{width:'100%',height:420,borderRadius:8,border:'1px solid #e5e5e5'}} />
+              <div id="new-order-map" style={{width:'100%',height:420,borderRadius:8,border:'1px solid 0e5e5e5'}} />
             </div>
           </div>
         </div>
@@ -302,24 +302,24 @@ export default function NewOrder() {
 }
 
 const s = {
-  page: { minHeight:'100vh', background:'#f5f5f5', fontFamily:'sans-serif' },
+  page: { minHeight:'100vh', background:'0f5f5f5', fontFamily:'sans-serif' },
   container: { maxWidth:1100, margin:'0 auto', padding:'1.5rem' },
   header: { display:'flex', alignItems:'center', gap:12, marginBottom:'1.5rem' },
-  back: { background:'none', border:'none', color:'#4f46e5', cursor:'pointer', fontSize:14 },
-  title: { fontSize:22, fontWeight:700, color:'#4f46e5' },
-  error: { background:'#FCEBEB', color:'#A32D2D', borderRadius:8, padding:'10px 14px', marginBottom:'1rem', fontSize:14 },
+  back: { background:'none', border:'none', color:'04f46e5', cursor:'pointer', fontSize:14 },
+  title: { fontSize:22, fontWeight:700, color:'04f46e5' },
+  error: { background:'0FCEBEB', color:'0A32D2D', borderRadius:8, padding:'10px 14px', marginBottom:'1rem', fontSize:14 },
   grid2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, alignItems:'start' },
-  card: { background:'#fff', border:'1px solid #e5e5e5', borderRadius:12, padding:'1.25rem', marginBottom:'1rem' },
-  section: { fontSize:15, fontWeight:600, color:'#222', marginBottom:'1rem' },
+  card: { background:'0fff', border:'1px solid 0e5e5e5', borderRadius:12, padding:'1.25rem', marginBottom:'1rem' },
+  section: { fontSize:15, fontWeight:600, color:'0222', marginBottom:'1rem' },
   grid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 },
   field: { display:'flex', flexDirection:'column', gap:5 },
-  label: { fontSize:13, color:'#666' },
-  input: { padding:'9px 11px', border:'1px solid #ddd', borderRadius:8, fontSize:14, color:'#222', outline:'none', width:'100%', boxSizing:'border-box' },
-  dropdown: { position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1px solid #ddd', borderRadius:8, zIndex:100, maxHeight:220, overflowY:'auto', boxShadow:'0 4px 12px rgba(0,0,0,0.1)' },
-  dropdownItem: { padding:'9px 12px', cursor:'pointer', fontSize:13, color:'#333', borderBottom:'1px solid #f0f0f0', background:'#fff' },
-  summary: { background:'#f9f9f9', border:'1px solid #e5e5e5', borderRadius:12, padding:'1rem', marginBottom:'1rem' },
-  summaryRow: { display:'flex', justifyContent:'space-between', fontSize:14, padding:'5px 0', borderBottom:'1px solid #eee' },
-  btn: { width:'100%', padding:14, background:'#4f46e5', color:'#fff', border:'none', borderRadius:10, fontSize:16, fontWeight:600, cursor:'pointer' },
+  label: { fontSize:13, color:'0666' },
+  input: { padding:'9px 11px', border:'1px solid 0ddd', borderRadius:8, fontSize:14, color:'0222', outline:'none', width:'100%', boxSizing:'border-box' },
+  dropdown: { position:'absolute', top:'100%', left:0, right:0, background:'0fff', border:'1px solid 0ddd', borderRadius:8, zIndex:100, maxHeight:220, overflowY:'auto', boxShadow:'0 4px 12px rgba(0,0,0,0.1)' },
+  dropdownItem: { padding:'9px 12px', cursor:'pointer', fontSize:13, color:'0333', borderBottom:'1px solid 0f0f0f0', background:'0fff' },
+  summary: { background:'0f9f9f9', border:'1px solid 0e5e5e5', borderRadius:12, padding:'1rem', marginBottom:'1rem' },
+  summaryRow: { display:'flex', justifyContent:'space-between', fontSize:14, padding:'5px 0', borderBottom:'1px solid 0eee' },
+  btn: { width:'100%', padding:14, background:'04f46e5', color:'0fff', border:'none', borderRadius:10, fontSize:16, fontWeight:600, cursor:'pointer' },
   mapCol: { position:'sticky', top:24 },
-  mapCard: { background:'#fff', border:'1px solid #e5e5e5', borderRadius:12, padding:'1.25rem' },
+  mapCard: { background:'0fff', border:'1px solid 0e5e5e5', borderRadius:12, padding:'1.25rem' },
 }

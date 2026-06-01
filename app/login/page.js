@@ -57,12 +57,12 @@ export default function Login() {
               {loading ? 'Conectando...' : 'Continuar con Google'}
             </button>
             <div style={{display:'flex',alignItems:'center',gap:10,margin:'1rem 0'}}>
-              <div style={{flex:1,height:1,background:'#eee'}}/>
-              <span style={{fontSize:12,color:'#aaa'}}>o</span>
-              <div style={{flex:1,height:1,background:'#eee'}}/>
+              <div style={{flex:1,height:1,background:'0eee'}}/>
+              <span style={{fontSize:12,color:'0aaa'}}>o</span>
+              <div style={{flex:1,height:1,background:'0eee'}}/>
             </div>
             <button onClick={()=>setMode('email')}
-              style={{...styles.btn,background:'#4f46e5',color:'#fff',border:'none'}}>
+              style={{...styles.btn,background:'04f46e5',color:'0fff',border:'none'}}>
               Ingresar con email y contrasena
             </button>
           </>
@@ -79,12 +79,12 @@ export default function Login() {
                 style={styles.input}
                 onKeyDown={e=>e.key==='Enter'&&loginEmail()} />
             </div>
-            <button style={{...styles.btn,background:'#4f46e5',color:'#fff',border:'none'}}
+            <button style={{...styles.btn,background:'04f46e5',color:'0fff',border:'none'}}
               onClick={loginEmail} disabled={loading}>
               {loading ? 'Ingresando...' : 'Ingresar'}
             </button>
             <button onClick={()=>{setMode('google');setError('')}}
-              style={{background:'none',border:'none',color:'#4f46e5',fontSize:13,cursor:'pointer',marginTop:12}}>
+              style={{background:'none',border:'none',color:'04f46e5',fontSize:13,cursor:'pointer',marginTop:12}}>
               Volver
             </button>
           </>
@@ -96,12 +96,12 @@ export default function Login() {
 }
 
 const styles = {
-  container: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#4f46e5' },
-  box: { background:'#fff', borderRadius:16, padding:'2rem', width:'100%', maxWidth:380, textAlign:'center' },
-  logo: { fontSize:28, fontWeight:700, color:'#4f46e5', letterSpacing:2, marginBottom:4 },
-  sub: { fontSize:13, color:'#888', marginBottom:'1.5rem' },
-  error: { background:'#FCEBEB', color:'#A32D2D', borderRadius:8, padding:'10px 12px', fontSize:13, marginBottom:'1rem' },
-  btn: { display:'flex', alignItems:'center', justifyContent:'center', width:'100%', padding:12, background:'#fff', color:'#333', border:'1px solid #ddd', borderRadius:8, fontSize:15, fontWeight:500, cursor:'pointer', marginBottom:4 },
-  input: { width:'100%', padding:'10px 12px', border:'1px solid #ddd', borderRadius:8, fontSize:14, boxSizing:'border-box' },
-  terms: { fontSize:12, color:'#aaa', marginTop:'1rem' }
+  container: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'04f46e5' },
+  box: { background:'0fff', borderRadius:16, padding:'2rem', width:'100%', maxWidth:380, textAlign:'center' },
+  logo: { fontSize:28, fontWeight:700, color:'04f46e5', letterSpacing:2, marginBottom:4 },
+  sub: { fontSize:13, color:'0888', marginBottom:'1.5rem' },
+  error: { background:'0FCEBEB', color:'0A32D2D', borderRadius:8, padding:'10px 12px', fontSize:13, marginBottom:'1rem' },
+  btn: { display:'flex', alignItems:'center', justifyContent:'center', width:'100%', padding:12, background:'0fff', color:'0333', border:'1px solid 0ddd', borderRadius:8, fontSize:15, fontWeight:500, cursor:'pointer', marginBottom:4 },
+  input: { width:'100%', padding:'10px 12px', border:'1px solid 0ddd', borderRadius:8, fontSize:14, boxSizing:'border-box' },
+  terms: { fontSize:12, color:'0aaa', marginTop:'1rem' }
 }
