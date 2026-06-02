@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
+import ExceptionReportModal from './components/ExceptionReportModal'
 
 const STATUS_LABEL = { pending:'Pendiente', assigned:'Asignado', picked_up:'Recogido', in_transit:'En tránsito', delivered:'Entregado', intento_fallido:'Intento Fallido', regreso_a_cliente:'Regreso a Cliente', devuelto_a_remitente:'Devuelto a Remitente' }
 const STATUS_COLOR = { pending:'0FAEEDA', assigned:'0eef2ff', picked_up:'0eef2ff', in_transit:'0E6F1FB', delivered:'0EAF3DE', intento_fallido:'0FEE2E2', regreso_a_cliente:'0FEE2E2', devuelto_a_remitente:'0F3F4F6' }
@@ -71,6 +72,8 @@ export default function DriverPanel() {
   const [selectedRejectionReason, setSelectedRejectionReason] = useState('CLIENTE_AUSENTE')
   const [attemptPhoto, setAttemptPhoto]         = useState(null)
   const [attemptPhotoPreview, setAttemptPhotoPreview] = useState(null)
+  const [showExceptionModal, setShowExceptionModal] = useState(false)
+  const [selectedOrderForException, setSelectedOrderForException] = useState(null)
 
   // Rutas
   const [activeRoute, setActiveRoute]   = useState(null)
@@ -705,6 +708,11 @@ export default function DriverPanel() {
                         {ALLOWED_TRANSITIONS[order.status]?.length > 0 && (
                           <button style={s.actionBtn} onClick={()=>openModal(order)}>Actualizar</button>
                         )}
+                        {(order.status === 'in_transit' || order.status === 'pending') && (
+                          <button style={{...s.actionBtn,background:'0DC2626'}} onClick={()=>{setSelectedOrderForException(order);setShowExceptionModal(true)}}>
+                            Reportar Fallo
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1022,6 +1030,25 @@ export default function DriverPanel() {
               )}
             </div>
           </div>
+        )}
+
+        {/* MODAL REPORTE DE EXCEPCION */}
+        {showExceptionModal && selectedOrderForException && (
+          <ExceptionReportModal
+            order={selectedOrderForException}
+            driverId={driverId}
+            onSuccess={async () => {
+              setShowExceptionModal(false)
+              setSelectedOrderForException(null)
+              setMsg('✅ Excepción registrada')
+              const supabase = createClient()
+              await loadAll(supabase, driverId)
+            }}
+            onClose={() => {
+              setShowExceptionModal(false)
+              setSelectedOrderForException(null)
+            }}
+          />
         )}
       </div>
     </div>
