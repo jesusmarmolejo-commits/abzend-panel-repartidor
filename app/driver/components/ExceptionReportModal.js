@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '../../../lib/supabase';
 
 export default function ExceptionReportModal({ order, driverId, onSuccess, onClose }) {
   const supabase = createClient();
