@@ -61,6 +61,7 @@ export default function DriverPanel() {
   const [processing, setProcessing]               = useState(false)
   const [msg, setMsg]             = useState('')
   const [qrInput, setQrInput]     = useState('')
+  const [shipmentStatuses, setShipmentStatuses] = useState([])
 
   // Transporte
   const [transportOrders, setTransportOrders]       = useState([])
@@ -74,6 +75,12 @@ export default function DriverPanel() {
   const [attemptPhotoPreview, setAttemptPhotoPreview] = useState(null)
   const [showExceptionModal, setShowExceptionModal] = useState(false)
   const [selectedOrderForException, setSelectedOrderForException] = useState(null)
+
+  // QR Lock
+  const [qrLockModal, setQrLockModal]       = useState(false)
+  const [qrLockInput, setQrLockInput]       = useState('')
+  const [qrLockVerified, setQrLockVerified] = useState(false)
+  const [qrLockOrder, setQrLockOrder]       = useState(null)
 
   // Rutas
   const [activeRoute, setActiveRoute]   = useState(null)
@@ -108,6 +115,13 @@ export default function DriverPanel() {
       const { data: driverData } = await supabase.from('drivers').select('id').eq('user_id', userData.id).single()
       if (!driverData) { router.push('/dashboard'); return }
       setDriverId(driverData.id)
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/shipment-statuses?categoria=fallo`)
+        if (res.ok) {
+          const json = await res.json()
+          setShipmentStatuses(json.data || [])
+        }
+      } catch(e) { console.warn('shipment-statuses no disponible:', e) }
       await loadAll(supabase, driverData.id)
       setLoading(false)
     }
@@ -165,10 +179,39 @@ export default function DriverPanel() {
     finally { setRouteProcessing(false) }
   }
 
-  const openModal = (order) => {
+  const verifyQrLock = async () => {
+    if (!qrLockInput.trim() || !qrLockOrder) return
+    setProcessing(true)
+    try {
+      const input = qrLockInput.trim()
+      const match = input === qrLockOrder.qr_code || input === qrLockOrder.tracking_code
+      if (!match) {
+        setMsg('❌ El QR no corresponde a esta orden')
+        setProcessing(false)
+        return
+      }
+      setQrLockVerified(true)
+      setQrLockModal(false)
+      setQrLockInput('')
+      openModal(qrLockOrder)
+    } catch(e) { setMsg('❌ Error al verificar QR: ' + e.message) }
+    finally { setProcessing(false) }
+  }
+
+  const openModalInternal = (order) => {
     setSelectedOrder(order)
     const transitions = ALLOWED_TRANSITIONS[order.status] || []
     setSelectedTransition(transitions[0]?.value || '')
+  }
+
+  const openModal = (order) => {
+    if (['in_transit', 'intento_fallido', 'picked_up'].includes(order.status) && !qrLockVerified) {
+      setQrLockOrder(order)
+      setQrLockModal(true)
+      return
+    }
+    setQrLockVerified(false)
+    openModalInternal(order)
   }
 
   const updateStatus = async () => {
@@ -244,15 +287,27 @@ export default function DriverPanel() {
         lat = pos.coords.latitude; lng = pos.coords.longitude
       } catch(e) {}
 
-      const { data, error } = await supabase.rpc('register_delivery_attempt', {
-        p_order_id:  selectedOrder.id,
-        p_reason:    selectedRejectionReason,
-        p_driver_id: driverId,
-        p_photo_url: photoUrl,
-        p_lat:       lat,
-        p_lng:       lng
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/orders/${selectedOrder.id}/report-failed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          status_code:  shipmentStatuses.find(s => s.codigo === selectedRejectionReason)?.codigo || 'ENT_F1',
+          reason:       selectedRejectionReason,
+          photo_url:    photoUrl,
+          lat,
+          lng,
+          notes: ''
+        })
       })
-      if (error) throw error
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Error al registrar intento')
+      }
+      const resData = await res.json()
 
       // Obtener email del remitente (client)
       const { data: clientData } = await supabase
@@ -263,9 +318,11 @@ export default function DriverPanel() {
       try {
         await supabase.functions.invoke('notify-delivery-attempt', {
           body: {
-            attempt_number:  data.intentos,
+            attempt_number:  resData.attempt_number,
             tracking_code:   selectedOrder.tracking_code,
-            reason:          REJECTION_REASONS.find(r=>r.value===selectedRejectionReason)?.label || selectedRejectionReason,
+            reason:          shipmentStatuses.find(s=>s.codigo===selectedRejectionReason)?.estado_es
+                          || REJECTION_REASONS.find(r=>r.value===selectedRejectionReason)?.label
+                          || selectedRejectionReason,
             recipient_name:  selectedOrder.recipient_name  || 'Cliente',
             recipient_email: selectedOrder.recipient_email || clientData?.email || '',
             sender_name:     selectedOrder.sender_name     || clientData?.full_name || 'Remitente',
@@ -276,11 +333,7 @@ export default function DriverPanel() {
         console.warn('Email no enviado:', emailErr)
       }
 
-      if (data.max_reached) {
-        setMsg(`🚫 ${selectedOrder.tracking_code}: 3 intentos → Regreso a Cliente`)
-      } else {
-        setMsg(`⚠️ Intento ${data.intentos}/3: ${REJECTION_REASONS.find(r=>r.value===selectedRejectionReason)?.label}`)
-      }
+      setMsg(`🚫 ${selectedOrder.tracking_code}: intento fallido → Regreso a Cliente`)
       setShowRejectionModal(false)
       setSelectedOrder(null)
       setSelectedRejectionReason('CLIENTE_AUSENTE')
@@ -877,21 +930,23 @@ export default function DriverPanel() {
               <h3 style={s.modalTitle}>⚠️ Intento Fallido</h3>
               <p style={s.modalSub}>0{selectedOrder.tracking_code}</p>
               <p style={{...s.modalSub, marginBottom:'1rem'}}>
-                Intentos previos: <strong>{selectedOrder.intentos_entrega || 0}/3</strong>
-                {(selectedOrder.intentos_entrega || 0) >= 2 && (
-                  <span style={{color:'0DC2626', fontWeight:700}}> — ⚠️ Último intento</span>
-                )}
+                <strong>1 intento permitido por asignación</strong>
               </p>
               <div style={s.field}>
                 <label style={s.label}>Razón de rechazo *</label>
-                {REJECTION_REASONS.map(r => (
-                  <label key={r.value} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',cursor:'pointer',borderBottom:'1px solid 0f0f0f0'}}>
-                    <input type="radio" name="rejection" value={r.value}
-                      checked={selectedRejectionReason === r.value}
-                      onChange={() => setSelectedRejectionReason(r.value)} />
-                    <span style={{fontSize:13}}>{r.label}</span>
-                  </label>
-                ))}
+                {(() => {
+                  const razones = shipmentStatuses.length > 0
+                    ? shipmentStatuses.map(s => ({ value: s.codigo, label: s.estado_es }))
+                    : REJECTION_REASONS
+                  return razones.map(r => (
+                    <label key={r.value} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',cursor:'pointer',borderBottom:'1px solid 0f0f0f0'}}>
+                      <input type="radio" name="rejection" value={r.value}
+                        checked={selectedRejectionReason === r.value}
+                        onChange={() => setSelectedRejectionReason(r.value)} />
+                      <span style={{fontSize:13}}>{r.label}</span>
+                    </label>
+                  ))
+                })()}
               </div>
 
               <div style={s.field}>
@@ -1028,6 +1083,47 @@ export default function DriverPanel() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* MODAL QR LOCK */}
+        {qrLockModal && qrLockOrder && (
+          <div style={s.modalOverlay}>
+            <div style={s.modal}>
+              <h3 style={s.modalTitle}>🔒 Verificar paquete</h3>
+              <p style={s.modalSub}>#{qrLockOrder.tracking_code}</p>
+              <p style={{...s.modalSub, marginBottom:'1rem', color:'0444'}}>
+                Escanea el QR del paquete para continuar
+              </p>
+              <div style={s.field}>
+                <label style={s.label}>Código QR del paquete *</label>
+                <div style={{display:'flex',gap:8}}>
+                  <input
+                    style={{...s.input, flex:1}}
+                    placeholder="Escanea o escribe el código..."
+                    value={qrLockInput}
+                    onChange={e => setQrLockInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && verifyQrLock()}
+                    autoFocus
+                    disabled={processing}
+                  />
+                  <button
+                    style={{...s.btn, opacity: processing ? 0.6 : 1, minWidth:48}}
+                    onClick={verifyQrLock}
+                    disabled={processing}>
+                    {processing ? '...' : '✓'}
+                  </button>
+                </div>
+                <p style={{fontSize:11, color:'0888', marginTop:6}}>
+                  📱 Apunta el lector al QR impreso en el paquete
+                </p>
+              </div>
+              <button style={{...s.cancelBtn, width:'100%', marginTop:8}}
+                onClick={() => { setQrLockModal(false); setQrLockInput(''); setQrLockOrder(null) }}
+                disabled={processing}>
+                Cancelar
+              </button>
             </div>
           </div>
         )}
